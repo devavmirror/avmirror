@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="AVMirror: assista JAV no Stremio e Nuvio.">
+  <title>AVMirror — Assistir JAV no Stremio e Nuvio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{avpink:'#ff5398',avred:'#dc2626'}}}}</script>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}body{background:#0a0a0a;color:#f5f5f5}.grid-bg{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:32px 32px}.pink-glow{box-shadow:0 0 80px rgba(255,83,152,.12)}.manifest{word-break:break-all}.copy-btn{transition:all .2s}.copy-btn:hover{background:#ff5398;color:#000}.copy-btn:active{transform:scale(.97)}
+  </style>
+</head>
+<body class="min-h-screen grid-bg">
+  <header class="border-b border-white/10 bg-black/70">
+    <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
+      <a href="/install" class="flex items-center gap-3 font-bold tracking-tight"><span class="grid h-9 w-9 place-items-center rounded bg-avpink text-lg font-black text-black">A</span><span>AVMirror</span></a>
+      <span class="text-sm text-gray-400">Versão 26.1</span>
+    </div>
+  </header>
+  <main class="mx-auto max-w-5xl px-5">
+    <section class="py-20 text-center sm:py-28">
+      <p class="mb-5 text-xs font-bold uppercase tracking-[.28em] text-avpink">Addon para Stremio e Nuvio · versão 26.1</p>
+      <h1 class="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl">AVMirror</h1>
+      <h2 class="mx-auto mt-4 max-w-3xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Assista <span class="text-avpink">JAV</span> no Stremio e Nuvio.</h2>
+      <p class="mx-auto mt-6 max-w-xl text-base leading-7 text-gray-400">Tenha seu catálogo, pesquisa, metadados e reprodução organizados em uma experiência integrada.</p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <a id="install" href="#" class="rounded bg-avpink px-6 py-3 font-bold text-black shadow-[0_0_30px_rgba(255,83,152,.25)] transition hover:bg-white">Instalar no Stremio</a>
+        <a href="#manifesto" class="rounded border border-white/20 px-6 py-3 font-bold text-white transition hover:border-avpink hover:text-avpink">Instalação manual</a>
+      </div>
+    </section>
+    <section id="apoie" class="mx-auto mb-6 max-w-2xl rounded border border-avpink/30 bg-black/60 p-6 pink-glow sm:p-8">
+      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-avpink">Apoie o projeto</p><h2 class="mt-2 text-xl font-bold">Apoie o AVMirror</h2></div><span class="rounded bg-avpink/10 px-2 py-1 text-xs text-avpink">Em breve</span></div>
+      <p class="mt-3 text-sm text-gray-400">Se o addon é útil para você, considere apoiar sua manutenção e continuidade. Em breve, disponibilizaremos as opções de doação.</p>
+      <button id="donate" type="button" disabled class="mt-5 w-full cursor-not-allowed rounded border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-gray-500">Link de doação em breve</button>
+    </section>
+    <section id="manifesto" class="mx-auto mb-20 max-w-2xl rounded border border-white/10 bg-black/60 p-6 pink-glow sm:p-8">
+      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-gray-500">Manifesto</p><h2 class="mt-2 text-xl font-bold">Instalação manual</h2></div><span class="rounded bg-white/10 px-2 py-1 text-xs text-gray-400">26.1</span></div>
+      <p class="mt-3 text-sm text-gray-400">Copie o endereço abaixo e cole na opção de adicionar addon por URL no Stremio ou Nuvio.</p>
+      <div class="mt-5 flex items-center gap-2 rounded border border-white/10 bg-[#111] p-2"><code id="manifest-url" class="manifest min-w-0 flex-1 px-2 text-xs text-gray-300"></code><button id="copy" type="button" class="copy-btn shrink-0 rounded bg-white/10 px-3 py-2 text-xs font-bold text-white">Copiar</button></div>
+      <p id="copied" class="mt-3 min-h-5 text-xs text-avpink" aria-live="polite"></p>
+    </section>
+    <section class="grid gap-4 border-t border-white/10 py-8 text-sm text-gray-400 sm:grid-cols-3"><div><strong class="text-white">Catálogo</strong><p class="mt-1">Novidades, populares, pesquisa e categorias.</p></div><div><strong class="text-white">Experiência integrada</strong><p class="mt-1">Conteúdo organizado no player compatível.</p></div><div><strong class="text-white">Atualização</strong><p class="mt-1"><span class="text-avpink">26.1</span> · versão atual do addon.</p></div></section>
+    <section class="border-t border-white/10 py-8 text-center text-xs leading-6 text-gray-500"><p>O addon é independente para Stremio e Nuvio. Use apenas fontes e conteúdos para os quais você possui autorização.</p><p class="mt-2"><a id="manifest-link" href="#" class="text-gray-300 hover:text-avpink">Manifesto</a></p></section>
+  </main>
+  <script>
+    const manifest=location.origin+'/manifest.json';document.getElementById('manifest-url').textContent=manifest;document.getElementById('manifest-link').href=manifest;document.getElementById('install').href='stremio://'+location.host+'/manifest.json';
+    document.getElementById('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(manifest);document.getElementById('copied').textContent='Manifesto copiado.'}catch{document.getElementById('copied').textContent='Copie o endereço manualmente.'}});
+  </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Pesquisa JavHD.today
+
+A página inicial oferece cards com URLs numéricas, busca e categorias: `/jav-censored/`, `/uncensored-jav/`, `/eng-sub-jav/`, `/chinese-subtitle/`, `/reducing-mosaic/`, `/releaseday/` e `/categories/`. Um item usa a URL `/78356/ssni-349-studio-s1-no-1-style-the-young-lady-who-keeps-unintentionally-provoking-me-with-her-big-j-cup-tits-nanami-matsumoto/` e contém o embed `/embed/78356/`.
+
+O embed tem `#main-player`, `#player-poster`, `#dropdownBtn` e opções `.server-option[data-embed]`. No item examinado, a opção Myserver usa `data-player="1"` e `data-embed` base64 decodifica para `https://worker2.savedvids.com/embed.php?p=p72V0ZsnvTZF3egK2NFl...`; Mycloudz usa `https://mycloudz.cc/v/yjb2x9d0pqif`; Avgle usa `https://avgle.com/embed/39e38a4507ec810cb9b5`. O script define `playEmbed(embed, true)` para manter o player lazy e só atribuir o embed ao iframe quando o usuário clica no pôster. Portanto o adaptador deve extrair/decodificar os `data-embed`, abrir os players diretamente com navegador, clicar somente controles de Play reais e capturar a mídia, descartando publicidade. Não deve retornar `externalUrl`.

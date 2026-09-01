@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: avmirror
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "7000"
+      - key: BASE_URL
+        value: "https://jav.guru"
+      - key: PUBLIC_BASE_URL
+        value: "https://avmirror.onrender.com"
+      - key: CACHE_TTL_MS
+        value: "900000"
+      - key: REQUEST_TIMEOUT_MS
+        value: "25000"
+      - key: PLAYER_TIMEOUT_MS
+        value: "3000"
+      - key: BROWSER_HEADLESS
+        value: "true"
+      - key: ENABLE_BROWSER_STREAMS
+        value: "false"
