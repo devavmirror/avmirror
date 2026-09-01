@@ -185,7 +185,7 @@ sudo apt install ./dist/avmirror-local_26.1.0_amd64.deb
 systemctl status avmirror.service
 ```
 
-O pacote instala o servidor, o runtime Node.js e o Chromium Playwright em `/opt/avmirror`, além do comando `/usr/bin/avmirror-local` e `avmirror.service`, habilitado no boot e configurado para `BIND_HOST=0.0.0.0`, `PORT=7000`. A porta deve ser liberada no firewall local, se o UFW estiver ativo: `sudo ufw allow 7000/tcp`.
+O pacote instala o servidor, o runtime Node.js e o Chromium Playwright Headless Shell em `/opt/avmirror`, além do comando `/usr/bin/avmirror-local` e `avmirror.service`, habilitado no boot e configurado para `BIND_HOST=0.0.0.0`, `PORT=7000`. A porta deve ser liberada no firewall local, se o UFW estiver ativo: `sudo ufw allow 7000/tcp`.
 
 ### Android / TV Box
 

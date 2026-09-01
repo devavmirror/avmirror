@@ -10,11 +10,11 @@ mkdir -p "$PKG/opt/avmirror" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromiu
 cp -a "$ROOT"/*.js "$ROOT"/lib "$ROOT"/public "$ROOT"/scripts "$ROOT"/package.json "$ROOT"/package-lock.json "$PKG/opt/avmirror/"
 [ -d "$ROOT/node_modules" ] && cp -a "$ROOT/node_modules" "$PKG/opt/avmirror/"
 cp -L "$NODE_BIN" "$PKG/opt/avmirror/node/node"
-if [ ! -x "$HOME/.cache/ms-playwright/chromium-1193/chrome-linux/chrome" ]; then
+if [ ! -x "$HOME/.cache/ms-playwright/chromium_headless_shell-1193/chrome-linux/headless_shell" ]; then
   PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright" npx playwright install chromium
 fi
 mkdir -p "$PKG/opt/avmirror/chromium/chrome-linux"
-cp -a "$HOME/.cache/ms-playwright/chromium-1193/chrome-linux/." "$PKG/opt/avmirror/chromium/chrome-linux/"
+cp -a "$HOME/.cache/ms-playwright/chromium_headless_shell-1193/chrome-linux/." "$PKG/opt/avmirror/chromium/chrome-linux/"
 cat > "$PKG/usr/bin/avmirror-local" <<'EOF'
 #!/bin/sh
 exec /opt/avmirror/node/node /opt/avmirror/scripts/start-local.js
