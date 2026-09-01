@@ -16,3 +16,11 @@ A rota direta do Stremio carregou `AVMirror — Jav.guru — Novos` com os filtr
 ## Recaptura após carregamento completo
 
 A nova captura foi feita somente depois de os cards exibirem os pôsteres e o painel lateral mostrar os detalhes do título selecionado. A imagem anterior, feita durante o carregamento, será substituída por esta versão completa.
+
+## Sequência refeita
+
+O primeiro print foi preparado com a busca `AVMirror`, ocultando visualmente os addons padrão protegidos. Após aguardar, o logo, nome, versão 26.1.0 e descrição do AVMirror estavam carregados e visíveis.
+
+## Prints finais refeitos
+
+O primeiro print final foi capturado após o carregamento do logo e dos dados do AVMirror, com a lista filtrada para exibir somente o nosso addon. O segundo foi capturado depois que os pôsteres do catálogo e o painel de detalhes terminaram de carregar.
