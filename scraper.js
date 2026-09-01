@@ -230,7 +230,21 @@ async function scrapeMeta(id) {
   const ogDescription = clean($("meta[property='og:description'],meta[name='description']").attr("content"));
   const paragraphs = article.find("p").map((_, e) => clean($(e).text())).get().filter(text => text.length > 40 && !generic.test(text));
   const description = paragraphs[0] || (!generic.test(ogDescription) ? ogDescription : title);
-  const poster = normalizePoster($("meta[property='og:image']").attr("content"), url) || normalizePoster(article.find("img").first().attr("src"), url);
+  const metaImage = $("meta[property='og:image'],meta[property='og:image:url'],meta[name='twitter:image']").map((_, e) => $(e).attr("content")).get();
+  const image = article.find("img").first();
+  const imageValues = [image.attr("data-lazy-src"), image.attr("data-src"), image.attr("data-original"), image.attr("src"), ...(image.attr("srcset") || "").split(",").map(value => value.trim().split(/\s+/)[0])];
+  let poster = [...metaImage, ...imageValues].map(value => normalizePoster(value, url)).find(Boolean) || null;
+  if (!poster && ENABLE_BROWSER_STREAMS) {
+    let ctx;
+    try {
+      ctx = await newContext();
+      const page = await ctx.newPage();
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: REQUEST_TIMEOUT_MS });
+      const browserImages = await page.locator("img").evaluateAll(nodes => nodes.flatMap(node => ["data-lazy-src", "data-src", "data-original", "src", "srcset"].map(name => node.getAttribute(name)).filter(Boolean)));
+      poster = browserImages.map(value => normalizePoster(String(value).split(",")[0].trim().split(/\s+/)[0], url)).find(Boolean) || null;
+    } catch (error) { console.error("meta poster browser:", error.message); }
+    finally { if (ctx) await ctx.close().catch(() => {}); }
+  }
   const info = $("h2").filter((_, e) => /^Movie Information:?$/i.test(clean($(e).text()))).first().closest("div");
   const scoped = info.length ? info : article;
   const uniqueLinks = selector => [...new Set(scoped.find(selector).map((_, e) => clean($(e).text()).replace(/\s*\([^)]*\)\s*$/, "")).get().filter(Boolean))];
