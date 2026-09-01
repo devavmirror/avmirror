@@ -35,6 +35,22 @@
       <p class="mt-3 text-sm text-gray-400">Se o addon é útil para você, considere apoiar sua manutenção e continuidade. Em breve, disponibilizaremos as opções de doação.</p>
       <button id="donate" type="button" disabled class="mt-5 w-full cursor-not-allowed rounded border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-gray-500">Link de doação em breve</button>
     </section>
+    <section id="downloads" class="mx-auto mb-6 max-w-5xl rounded border border-white/10 bg-black/60 p-6 pink-glow sm:p-8">
+      <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-avpink">Downloads</p><h2 class="mt-2 text-xl font-bold">Instale o servidor local</h2></div><span class="rounded bg-white/10 px-2 py-1 text-xs text-gray-400">26.1.0</span></div>
+      <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-400">Baixe a versão correspondente ao seu dispositivo. Windows e Ubuntu/Debian incluem o runtime e o navegador headless necessários para executar o servidor em segundo plano.</p>
+      <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <a class="download-card rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink hover:bg-avpink/5" data-download="windows" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-windows-x64-self-contained.zip">
+          <p class="text-base font-bold text-white">Windows</p><p class="mt-2 text-xs leading-5 text-gray-400">Bundle ZIP x64 com executável, Chromium e instalador PowerShell.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar Windows</span>
+        </a>
+        <a class="download-card rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink hover:bg-avpink/5" data-download="linux" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-local_26.1.0_amd64.deb">
+          <p class="text-base font-bold text-white">Ubuntu / Debian</p><p class="mt-2 text-xs leading-5 text-gray-400">Pacote DEB x64 com Node.js, dependências e Chromium Headless Shell.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar DEB</span>
+        </a>
+        <a class="download-card rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink hover:bg-avpink/5" data-download="android" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-android_26.1.0.apk">
+          <p class="text-base font-bold text-white">Android</p><p class="mt-2 text-xs leading-5 text-gray-400">APK com WebView/Chromium oculto e serviço foreground.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar APK</span>
+        </a>
+      </div>
+      <p id="download-note" class="mt-4 text-xs text-gray-500">Os downloads são publicados nas Releases oficiais do GitHub.</p>
+    </section>
     <section id="manifesto" class="mx-auto mb-20 max-w-2xl rounded border border-white/10 bg-black/60 p-6 pink-glow sm:p-8">
       <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-gray-500">Manifesto</p><h2 class="mt-2 text-xl font-bold">Instalação manual</h2></div><span class="rounded bg-white/10 px-2 py-1 text-xs text-gray-400">26.1</span></div>
       <p class="mt-3 text-sm text-gray-400">Copie o endereço abaixo e cole na opção de adicionar addon por URL no Stremio ou Nuvio.</p>
