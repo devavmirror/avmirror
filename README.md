@@ -31,8 +31,10 @@ Para executar o projeto localmente, é necessário ter **Node.js 20 ou superior*
 ```bash
 npm install
 npx playwright install chromium
-npm start
+npm run start:local
 ```
+
+No modo local, o servidor escuta somente em `127.0.0.1:7000`. O Stremio recebe URLs HLS locais (`http://127.0.0.1:7000/hls?...`) e o dispositivo faz o proxy da playlist e dos segmentos diretamente para o player. O tráfego de vídeo não passa pelo Render.
 
 Por padrão, o serviço escuta na porta `7000`. Para iniciar em modo de desenvolvimento com reinicialização automática, utilize:
 
@@ -40,7 +42,7 @@ Por padrão, o serviço escuta na porta `7000`. Para iniciar em modo de desenvol
 npm run dev
 ```
 
-Depois de iniciar, os principais endereços locais são:
+Depois de iniciar em modo local, instale no Stremio usando `stremio://127.0.0.1:7000/manifest.json` ou abra a página de instalação local. Os principais endereços são:
 
 | Endpoint | Finalidade |
 | --- | --- |
@@ -65,13 +67,15 @@ A aplicação aceita configurações por variáveis de ambiente. Em produção, 
 | `IMAGE_CACHE_MAX_BYTES` | Tamanho total máximo do cache de imagens em memória. | `50331648` |
 | `CACHE_MAX_ENTRIES` | Quantidade máxima de respostas de scraping mantidas em memória. | `500` |
 | `ENABLE_BROWSER_STREAMS` | Permite habilitar resolução dinâmica quando necessária. | Desabilitada por padrão |
-| `VIDEO_PROXY` | Não utilizado: o addon sempre retorna a URL direta do stream. | Desativado permanentemente |
+| `LOCAL_MODE` | Ativa o proxy HLS local e vincula o servidor a `127.0.0.1`. | `false` |
+| `BIND_HOST` | Interface de escuta HTTP. | `127.0.0.1` em modo local; `0.0.0.0` remotamente |
+| `VIDEO_PROXY` | Legado; não habilita proxy no Render. | Desativado remotamente |
 
 Os valores reais de produção devem permanecer fora do controle de versão. O arquivo `.env` não deve ser publicado, e qualquer token temporário deve ser tratado como segredo operacional.
 
 ## Reprodução de vídeo
 
-O AVMirror não retransmite vídeo pelo servidor. Os handlers de stream preservam as URLs HTTPS originais das fontes, e a rota legada `/hls` responde `410 Gone` para impedir que qualquer vídeo seja transferido pelo Render. O servidor continua podendo entregar catálogo, metadados, manifesto e imagens proxificadas.
+Em implantação no Render, o AVMirror não retransmite vídeo: os handlers preservam as URLs HTTPS originais e `/hls` responde `410 Gone`. Em execução local com `LOCAL_MODE=true`, o servidor do próprio dispositivo pode fazer o proxy HLS para resolver playlists, segmentos e cabeçalhos exigidos pela fonte. Nesse caso, o tráfego de vídeo permanece entre a fonte, o dispositivo e o Stremio; o Render não participa da reprodução.
 
 ## Docker
 

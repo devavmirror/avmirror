@@ -7,6 +7,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:local": "LOCAL_MODE=true node server.js",
     "dev": "node --watch server.js",
     "browser": "npx playwright install chromium",
     "test": "node --test"
