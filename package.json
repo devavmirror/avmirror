@@ -17,14 +17,19 @@
     "build:apk": "bash scripts/build-apk.sh",
     "test": "node --test"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
+    "bytenode": "^1.5.7",
     "cheerio": "^1.1.2",
     "express": "^5.1.0",
     "javascript-obfuscator": "^4.1.1",
-    "bytenode": "^1.5.7",
     "playwright": "1.55.1",
     "stremio-addon-sdk": "^1.6.10"
   },
-  "devDependencies": { "pkg": "^5.8.1" }
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.22.0",
+    "pkg": "^5.8.1"
+  }
 }
