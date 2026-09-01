@@ -306,6 +306,8 @@ app.disable("x-powered-by");
 // Health and installation UI must be registered before the Stremio router.
 app.get("/health", (_req, res) => res.status(200).json({ ok: true, name: "AVMirror", version: manifest.version }));
 app.get("/install", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));
+app.get("/stremio-addons-installed.webp", (_req, res) => res.sendFile(path.join(__dirname, "public", "stremio-addons-installed.webp")));
+app.get("/stremio-avmirror-catalog.webp", (_req, res) => res.sendFile(path.join(__dirname, "public", "stremio-avmirror-catalog.webp")));
 app.get("/logo.png", (_req, res) => {
   res.set("Cache-Control", "public, max-age=86400");
   res.sendFile(path.join(__dirname, "public", "logo.png"));

@@ -15,7 +15,7 @@
 <body class="min-h-screen grid-bg">
   <header class="border-b border-white/10 bg-black/70">
     <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
-      <a href="/install" class="flex items-center gap-3 font-bold tracking-tight"><span class="grid h-9 w-9 place-items-center rounded bg-avpink text-lg font-black text-black">A</span><span>AVMirror</span></a>
+      <a href="/install" class="flex items-center gap-3 font-bold tracking-tight"><img src="/logo.png" alt="Logo AVMirror" class="h-9 w-9 rounded object-cover" width="36" height="36"><span>AVMirror</span></a>
       <span class="text-sm text-gray-400">Versão 26.1</span>
     </div>
   </header>
@@ -40,6 +40,19 @@
       <p class="mt-3 text-sm text-gray-400">Copie o endereço abaixo e cole na opção de adicionar addon por URL no Stremio ou Nuvio.</p>
       <div class="mt-5 flex items-center gap-2 rounded border border-white/10 bg-[#111] p-2"><code id="manifest-url" class="manifest min-w-0 flex-1 px-2 text-xs text-gray-300"></code><button id="copy" type="button" class="copy-btn shrink-0 rounded bg-white/10 px-3 py-2 text-xs font-bold text-white">Copiar</button></div>
       <p id="copied" class="mt-3 min-h-5 text-xs text-avpink" aria-live="polite"></p>
+    </section>
+    <section id="stremio-preview" class="mx-auto mb-20 max-w-5xl">
+      <div class="mb-8 text-center"><p class="text-xs font-bold uppercase tracking-[.28em] text-avpink">Veja no Stremio</p><h2 class="mt-2 text-2xl font-bold text-white sm:text-3xl">Nosso addon, dentro do seu player</h2><p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-gray-400">Confira como o AVMirror aparece no Stremio e como o catálogo fica organizado após a instalação.</p></div>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <figure class="overflow-hidden rounded border border-white/10 bg-black/60 pink-glow">
+          <img src="/stremio-addons-installed.webp" alt="AVMirror aparecendo sozinho na lista filtrada de addons do Stremio" loading="lazy" class="block h-auto w-full">
+          <figcaption class="border-t border-white/10 px-5 py-4 text-sm text-gray-400"><strong class="text-white">Addon instalado</strong><br>O AVMirror identificado no Stremio com a versão 26.1.0.</figcaption>
+        </figure>
+        <figure class="overflow-hidden rounded border border-white/10 bg-black/60 pink-glow">
+          <img src="/stremio-avmirror-catalog.webp" alt="Catálogo AVMirror carregado no Stremio com pôsteres e painel de detalhes" loading="lazy" class="block h-auto w-full">
+          <figcaption class="border-t border-white/10 px-5 py-4 text-sm text-gray-400"><strong class="text-white">Catálogo carregado</strong><br>Cards, pôsteres, filtros e detalhes do catálogo AVMirror.</figcaption>
+        </figure>
+      </div>
     </section>
     <section class="grid gap-4 border-t border-white/10 py-8 text-sm text-gray-400 sm:grid-cols-3"><div><strong class="text-white">Catálogo</strong><p class="mt-1">Novidades, populares, pesquisa e categorias.</p></div><div><strong class="text-white">Experiência integrada</strong><p class="mt-1">Conteúdo organizado no player compatível.</p></div><div><strong class="text-white">Atualização</strong><p class="mt-1"><span class="text-avpink">26.1</span> · versão atual do addon.</p></div></section>
     <section class="border-t border-white/10 py-8 text-center text-xs leading-6 text-gray-500"><p>O addon é independente para Stremio e Nuvio. Use apenas fontes e conteúdos para os quais você possui autorização.</p><p class="mt-2"><a id="manifest-link" href="#" class="text-gray-300 hover:text-avpink">Manifesto</a></p></section>
