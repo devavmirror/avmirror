@@ -1,5 +1,6 @@
 const cheerio = require("cheerio");
 const { chromium } = require("playwright");
+const fs = require("node:fs");
 const vm = require("node:vm");
 
 const BASE_URL = (process.env.BASE_URL || "https://jav.guru").replace(/\/+$/, "");
@@ -97,7 +98,10 @@ async function activatePlayerFrames(page, rounds = 2) {
 }
 
 async function getBrowser() {
-  if (!browserPromise) browserPromise = chromium.launch({ headless: HEADLESS, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(e => { browserPromise = null; throw e; });
+  if (!browserPromise) {
+    const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"].find(fs.existsSync);
+    browserPromise = chromium.launch({ ...(executablePath ? { executablePath } : {}), headless: HEADLESS, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(e => { browserPromise = null; throw e; });
+  }
   return browserPromise;
 }
 async function newContext() {

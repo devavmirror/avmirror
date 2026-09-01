@@ -1,5 +1,6 @@
 const cheerio = require("cheerio");
 const { chromium } = require("playwright");
+const fs = require("node:fs");
 
 const BASE_URL = (process.env.JAVRIDER_BASE_URL || "https://javrider.com").replace(/\/+$/, "");
 const USER_AGENT = process.env.USER_AGENT || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139 Safari/537.36";
@@ -37,7 +38,7 @@ async function get(url, referer = `${BASE_URL}/`) {
   pending.set(key, request);
   return request;
 }
-async function getBrowser() { if (!browserPromise) browserPromise = chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(error => { browserPromise = null; throw error; }); return browserPromise; }
+async function getBrowser() { if (!browserPromise) { const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"].find(fs.existsSync); browserPromise = chromium.launch({ ...(executablePath ? { executablePath } : {}), headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(error => { browserPromise = null; throw error; }); } return browserPromise; }
 async function capture(url, referer = `${BASE_URL}/`) {
   const browser = await getBrowser(), context = await browser.newContext({ userAgent: USER_AGENT, viewport: { width: 1280, height: 900 }, ignoreHTTPSErrors: true });
   const page = await context.newPage(), media = new Set();

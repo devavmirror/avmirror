@@ -1,0 +1,16 @@
+[Unit]
+Description=AVMirror local Stremio addon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/avmirror/server.js
+WorkingDirectory=/opt/avmirror
+Restart=on-failure
+Environment=LOCAL_MODE=true
+Environment=BIND_HOST=0.0.0.0
+Environment=PORT=7000
+
+[Install]
+WantedBy=multi-user.target

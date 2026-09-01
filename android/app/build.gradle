@@ -1,0 +1,10 @@
+plugins { id 'com.android.application' }
+
+android { namespace 'com.avmirror.local'; compileSdk 35
+    defaultConfig { applicationId 'com.avmirror.local'; minSdk 26; targetSdk 35; versionCode 2610; versionName '26.1.0' }
+}
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+
+// O APK hospeda a camada nativa; a execução do servidor Node é fornecida pelo runtime nodejs-mobile.
+dependencies { implementation 'com.github.janeasystems:nodejs-mobile-android:18.20.4-v1.0.0' }

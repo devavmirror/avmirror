@@ -1,0 +1,10 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const cp = require("node:child_process");
+const root = path.resolve(__dirname, "..");
+const dist = path.join(root, "dist", "win-x64");
+fs.rmSync(dist, { recursive: true, force: true });
+fs.mkdirSync(dist, { recursive: true });
+cp.execFileSync(process.platform === "win32" ? "npx.cmd" : "npx", ["pkg", "server.js", "--targets", "node20-win-x64", "--output", path.join(dist, "avmirror.exe")], { cwd: root, stdio: "inherit" });
+fs.copyFileSync(path.join(root, "scripts", "windows", "install.ps1"), path.join(dist, "install.ps1"));
+console.log(`Windows bundle written to ${dist}`);

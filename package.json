@@ -2,23 +2,29 @@
   "name": "avmirror-stremio-addon",
   "version": "26.1.0",
   "private": true,
-  "description": "AVMirror Stremio addon using Playwright to render an authorized source and observe its network requests.",
+  "description": "AVMirror Stremio addon com servidor local LAN multiplataforma.",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "start:local": "LOCAL_MODE=true node server.js",
+    "start:local": "LOCAL_MODE=true BIND_HOST=0.0.0.0 node scripts/start-local.js",
     "dev": "node --watch server.js",
     "browser": "npx playwright install chromium",
+    "protect": "node scripts/build-protected.js",
+    "protect:bytecode": "node scripts/compile-bytecode.js",
+    "build:win": "node scripts/build-win.js",
+    "build:deb": "bash scripts/build-deb.sh",
+    "build:apk": "bash scripts/build-apk.sh",
     "test": "node --test"
   },
-  "engines": {
-    "node": ">=20"
-  },
+  "engines": { "node": ">=20" },
   "dependencies": {
     "cheerio": "^1.1.2",
     "express": "^5.1.0",
+    "javascript-obfuscator": "^4.1.1",
+    "bytenode": "^1.5.7",
     "playwright": "1.55.1",
     "stremio-addon-sdk": "^1.6.10"
-  }
+  },
+  "devDependencies": { "pkg": "^5.8.1" }
 }

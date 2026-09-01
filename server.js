@@ -4,12 +4,13 @@ const { scrapeJavRiderCatalog, scrapeJavRiderMeta, scrapeJavRiderStreams, closeJ
 const { scrapeAv01Catalog, scrapeAv01Meta, scrapeAv01Streams, AV01_GENRES } = require("./av01");
 const express = require("express");
 const path = require("path");
+const { getLocalIPv4, getLocalBaseUrl } = require("./lib/network");
 
 const PORT = Number(process.env.PORT || 7000);
 const LOCAL_MODE = process.env.LOCAL_MODE === "1" || process.env.LOCAL_MODE === "true";
-const BIND_HOST = process.env.BIND_HOST || (LOCAL_MODE ? "127.0.0.1" : "0.0.0.0");
+const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
 const RENDER_HOST = process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : "";
-const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || (LOCAL_MODE ? `http://127.0.0.1:${PORT}` : process.env.RENDER_EXTERNAL_URL || RENDER_HOST || "https://avmirror.onrender.com")).replace(/\/+$/, "");
+const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || (LOCAL_MODE ? getLocalBaseUrl(PORT) : process.env.RENDER_EXTERNAL_URL || RENDER_HOST || "https://avmirror.onrender.com")).replace(/\/+$/, "");
 const SOURCE_URL = new URL(process.env.BASE_URL || "https://jav.guru");
 const IMAGE_HOSTS = new Set([
   SOURCE_URL.hostname,
@@ -352,6 +353,11 @@ app.disable("x-powered-by");
 
 // Health and installation UI must be registered before the Stremio router.
 app.get("/health", (_req, res) => res.status(200).json({ ok: true, name: "AVMirror", version: manifest.version }));
+app.get("/api/local-info", (req, res) => {
+  const host = req.hostname && req.hostname !== "localhost" && req.hostname !== "127.0.0.1" ? req.hostname : getLocalIPv4();
+  const base = `http://${host}:${PORT}`;
+  res.json({ host, port: PORT, baseUrl: base, manifestUrl: `${base}/manifest.json`, stremioUrl: `stremio://${host}:${PORT}/manifest.json` });
+});
 app.get("/install", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));
 const staticAssetOptions = { maxAge: "7d", immutable: true };
 app.get("/stremio-addons-installed.webp", (_req, res) => res.sendFile(path.join(__dirname, "public", "stremio-addons-installed.webp"), staticAssetOptions));
@@ -443,7 +449,7 @@ app.get("/hls", async (req, res) => {
     return res.status(502).json({ error: "media unavailable" });
   }
 });
-app.get("/", (_req, res) => res.redirect("/install"));
+app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));
 
 // Official SDK exposes the addon protocol as an Express-compatible router.
 // This makes /manifest.json, /catalog/..., /meta/... and /stream/... available.
