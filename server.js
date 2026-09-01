@@ -30,6 +30,7 @@ const IMAGE_CACHE_MAX_BYTES = Number(process.env.IMAGE_CACHE_MAX_BYTES || 48 * 1
 const imageCache = new Map();
 const imagePending = new Map();
 let imageCacheBytes = 0;
+const mediaCookies = new Map();
 const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)www\.av01\.media$|(^|\.)customers\.iw01\.xyz$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$/i;
 const JAV_GENRES = [
   "3P", "Amateur", "Back", "Beautiful Girl", "Big tits", "Blowjob", "Boobs fetish", "Cowgirl",
@@ -139,13 +140,21 @@ function sourceReferer(rawUrl) {
   try {
     const host = new URL(rawUrl).hostname.toLowerCase();
     if (host.endsWith("javplayers.com") || host.endsWith("akmicdn.com")) return "https://javplayers.com/";
-    if (host.endsWith("turboviplay.com")) return "https://turbovidhls.com/";
+    if (host.endsWith("premilkyway.com") ? "https://jav.guru/" : host.endsWith("turboviplay.com")) return "https://turbovidhls.com/";
     if (host.endsWith("97bf1.com")) return "https://vidara.to/";
     if (host.endsWith("tnmr.org")) return "https://streamhihi.com/";
     if (host === "www.av01.media" || host === "customers.iw01.xyz") return "https://www.av01.media/";
     if (host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com")) return "https://javhd.name/";
+    if (host.endsWith("premilkyway.com")) return "https://jav.guru/";
     return "https://javclan.com/";
   } catch { return "https://jav.guru/"; }
+}
+function rememberMediaCookies(response, host) {
+  const values = typeof response.headers.getSetCookie === "function" ? response.headers.getSetCookie() : [];
+  if (!values.length) return;
+  const current = new Map((mediaCookies.get(host) || "").split(/;\s*/).filter(Boolean).map(value => value.split("=", 1)[0]).map(name => [name, (mediaCookies.get(host) || "").match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1] || ""]));
+  for (const value of values) { const pair = value.split(";", 1)[0]; const index = pair.indexOf("="); if (index > 0) current.set(pair.slice(0, index), pair.slice(index + 1)); }
+  mediaCookies.set(host, [...current].map(([name, value]) => `${name}=${value}`).join("; "));
 }
 function directBehaviorHints(rawUrl, behaviorHints = {}) {
   const referer = sourceReferer(rawUrl);
@@ -399,10 +408,11 @@ app.get("/hls", async (req, res) => {
     if (!isAllowedMediaUrl(rawUrl)) throw new Error("media host is not allowed");
     const host = new URL(rawUrl).hostname.toLowerCase();
     const luluCode = host.endsWith("tnmr.org") ? rawUrl.match(/\/([^/]+)_h\/master\.m3u8/i)?.[1] : null;
-    const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("av01.media") || host.endsWith("iw01.xyz") ? "https://www.av01.media/" : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
+    const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("premilkyway.com") ? "https://jav.guru/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("av01.media") || host.endsWith("iw01.xyz") ? "https://www.av01.media/" : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
     const requestHeaders = { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36", referer, origin: new URL(referer).origin, accept: "*/*" };
     if (req.headers.range) requestHeaders.range = req.headers.range;
     let response = await fetch(rawUrl, { headers: requestHeaders });
+    rememberMediaCookies(response, host);
     if (response.status === 403 && /(?:www\.av01\.media|customers\.iw01\.xyz)$/i.test(host)) {
       const refreshed = await refreshAv01Manifest(rawUrl);
       if (refreshed) {
