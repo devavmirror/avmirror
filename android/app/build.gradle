@@ -6,5 +6,6 @@ android { namespace 'com.avmirror.local'; compileSdk 35
 
 java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
 
-// O APK hospeda a camada nativa; a execução do servidor Node é fornecida pelo runtime nodejs-mobile.
-dependencies { implementation 'com.github.janeasystems:nodejs-mobile-android:18.20.4-v1.0.0' }
+// O WebView usa o Chromium/WebView fornecido pelo Android. Nenhum navegador
+// separado precisa ser instalado pelo usuário.
+dependencies { }
