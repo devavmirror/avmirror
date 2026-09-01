@@ -6,8 +6,10 @@ const express = require("express");
 const path = require("path");
 
 const PORT = Number(process.env.PORT || 7000);
+const LOCAL_MODE = process.env.LOCAL_MODE === "1" || process.env.LOCAL_MODE === "true";
+const BIND_HOST = process.env.BIND_HOST || (LOCAL_MODE ? "127.0.0.1" : "0.0.0.0");
 const RENDER_HOST = process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : "";
-const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || RENDER_HOST || "https://avmirror.onrender.com").replace(/\/+$/, "");
+const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || (LOCAL_MODE ? `http://127.0.0.1:${PORT}` : process.env.RENDER_EXTERNAL_URL || RENDER_HOST || "https://avmirror.onrender.com")).replace(/\/+$/, "");
 const SOURCE_URL = new URL(process.env.BASE_URL || "https://jav.guru");
 const IMAGE_HOSTS = new Set([
   SOURCE_URL.hostname,
@@ -161,12 +163,16 @@ function directBehaviorHints(rawUrl, behaviorHints = {}) {
   };
 }
 function proxiedStreams(streams) {
-  // Playback must happen directly at the source. Never route video through Render.
   return streams
     .filter(stream => stream && (stream.url || stream.externalUrl))
-    .map(stream => stream.url && !stream.externalUrl
-      ? { ...stream, behaviorHints: directBehaviorHints(stream.url, stream.behaviorHints) }
-      : stream);
+    .map(stream => {
+      if (!stream.url || stream.externalUrl) return stream;
+      if (LOCAL_MODE) {
+        return { ...stream, url: proxyMediaUrl(stream.url), behaviorHints: stream.behaviorHints || {} };
+      }
+      // Render never retransmits video; remote deployments deliver the source URL.
+      return { ...stream, behaviorHints: directBehaviorHints(stream.url, stream.behaviorHints) };
+    });
 }
 function supportStream() {
   return {
@@ -372,10 +378,9 @@ app.get("/image", async (req, res) => {
     res.status(404).json({ error: "image unavailable" });
   }
 });
-// Video proxy is intentionally disabled: Stremio receives the original source URL.
-// Keep a hard-deny guard before the legacy implementation below so no request can
-// accidentally retransmit media through this service.
-app.all("/hls", (_req, res) => res.status(410).json({ error: "video proxy disabled; use the direct source URL" }));
+// In local mode the device may proxy HLS for its own Stremio instance.
+// In Render mode this route is hard-disabled so it cannot carry video traffic.
+if (!LOCAL_MODE) app.all("/hls", (_req, res) => res.status(410).json({ error: "video proxy disabled on remote deployment" }));
 app.options("/hls", (_req, res) => res.status(204)
   .set("Access-Control-Allow-Origin", "*")
   .set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
@@ -444,8 +449,8 @@ app.get("/", (_req, res) => res.redirect("/install"));
 // This makes /manifest.json, /catalog/..., /meta/... and /stream/... available.
 app.use("/", getRouter(builder.getInterface()));
 
-const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`AVMirror listening on 0.0.0.0:${PORT}`);
+const server = app.listen(PORT, BIND_HOST, () => {
+  console.log(`AVMirror listening on ${BIND_HOST}:${PORT} (${LOCAL_MODE ? "local proxy" : "remote direct streams"})`);
 });
 
 const shutdown = async () => {
