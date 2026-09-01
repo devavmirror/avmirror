@@ -4,12 +4,13 @@ const cp = require("node:child_process");
 const os = require("node:os");
 const root = path.resolve(__dirname, "..");
 const dist = path.join(root, "dist", "win-x64");
+const exeName = "avmirror-windows_26.1.0.exe";
 const chromiumDir = path.join(dist, "chromium");
 const chromiumExe = path.join(chromiumDir, "chrome-win", "chrome.exe");
 
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
-cp.execFileSync(process.platform === "win32" ? "npx.cmd" : "npx", ["@yao-pkg/pkg", "server.js", "--targets", "node22-win-x64", "--output", path.join(dist, "avmirror.exe")], { cwd: root, stdio: "inherit" });
+cp.execFileSync(process.platform === "win32" ? "npx.cmd" : "npx", ["@yao-pkg/pkg", "server.js", "--targets", "node22-win-x64", "--output", path.join(dist, exeName)], { cwd: root, stdio: "inherit" });
 if (!fs.existsSync(chromiumExe)) {
   const archive = path.join(os.tmpdir(), "avmirror-chromium-win64.zip");
   const url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1193/chromium-win64.zip";

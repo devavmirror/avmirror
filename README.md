@@ -162,7 +162,7 @@ Abra o PowerShell como Administrador na pasta do projeto e execute:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
-$env:AVMIRROR_WINDOWS_URL = 'https://HOST/RELEASES/avmirror-windows-x64-self-contained.zip'
+$env:AVMIRROR_WINDOWS_URL = 'https://HOST/RELEASES/avmirror-windows_26.1.0.zip'
 .\scripts\windows\install.ps1
 ```
 

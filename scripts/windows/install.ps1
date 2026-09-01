@@ -18,9 +18,9 @@ if (([IO.Path]::GetExtension($ArtifactUrl).ToLowerInvariant()) -eq '.zip') {
   if (-not $bundle) { $bundle = Get-Item $tempExtract }
   Copy-Item -Path (Join-Path $bundle.FullName '*') -Destination $InstallDir -Recurse -Force
 } else {
-  Copy-Item -Path $download -Destination (Join-Path $InstallDir 'avmirror.exe') -Force
+  Copy-Item -Path $download -Destination (Join-Path $InstallDir 'avmirror-windows_26.1.0.exe') -Force
 }
-$exe = Join-Path $InstallDir 'avmirror.exe'
+$exe = Join-Path $InstallDir 'avmirror-windows_26.1.0.exe'
 if (-not (Test-Path $exe) -or (Get-Item $exe).Length -lt 1MB) { throw 'Download do bundle Windows inválido ou incompleto.' }
 
 $rule = Get-NetFirewallRule -DisplayName 'AVMirror LAN (TCP 7000)' -ErrorAction SilentlyContinue

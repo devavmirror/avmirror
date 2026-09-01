@@ -40,5 +40,5 @@ systemctl restart avmirror.service || true
 EOF
 chmod 0755 "$PKG/DEBIAN/postinst"
 mkdir -p "$ROOT/dist"
-dpkg-deb --build "$PKG" "$ROOT/dist/avmirror-local_${VERSION}_amd64.deb"
-printf '%s\n' "$ROOT/dist/avmirror-local_${VERSION}_amd64.deb"
+dpkg-deb --build "$PKG" "$ROOT/dist/avmirror-linux_${VERSION}_amd64.deb"
+printf '%s\n' "$ROOT/dist/avmirror-linux_${VERSION}_amd64.deb"
