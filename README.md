@@ -166,14 +166,14 @@ $env:AVMIRROR_WINDOWS_URL = 'https://HOST/RELEASES/avmirror-windows_26.1.0.zip'
 .\scripts\windows\install.ps1
 ```
 
-O instalador copia o aplicativo para `%LocalAppData%\avmirror-addon`, cria a regra de firewall TCP 7000 apenas para o perfil Private, registra o autostart em `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, cria `AVMirror.lnk` na área de trabalho e inicia o servidor. O pacote portátil pode ser gerado com `npm run build:win`; ele produz `dist/win-x64/avmirror.exe` e uma cópia do instalador.
+O instalador copia o aplicativo para `%LocalAppData%\avmirror-addon`, cria a regra de firewall TCP 7000 apenas para o perfil Private, registra o autostart em `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` e inicia o servidor. O pacote portátil pode ser gerado com `npm run build:win`; ele produz `dist/win-x64/avmirror-windows_26.1.0.exe` e uma cópia do instalador.
 
 ### Debian/Ubuntu: pacote `.deb`
 
 O instalador remoto também não acessa o código-fonte:
 
 ```bash
-curl -sSL https://HOST/RELEASES/install.sh | AVMIRROR_LINUX_URL=https://HOST/RELEASES/avmirror-local_26.1.0_amd64.deb bash
+curl -sSL https://HOST/RELEASES/install.sh | AVMIRROR_LINUX_URL=https://HOST/RELEASES/avmirror-linux_26.1.0_amd64.deb bash
 ```
 
 Com Node.js 20+ e as dependências instaladas, execute:
@@ -181,7 +181,7 @@ Com Node.js 20+ e as dependências instaladas, execute:
 ```bash
 npm install
 npm run build:deb
-sudo apt install ./dist/avmirror-local_26.1.0_amd64.deb
+sudo apt install ./dist/avmirror-linux_26.1.0_amd64.deb
 systemctl status avmirror.service
 ```
 
@@ -189,14 +189,14 @@ O pacote instala o servidor, o runtime Node.js e o Chromium Playwright Headless 
 
 ### Android / TV Box
 
-O diretório `android/` contém um projeto Gradle com Activity nativa e um Foreground Service com notificação persistente. O serviço mantém o runtime Node ativo e a interface mostra o IP local e o botão **Instalar no Stremio**. Gere o APK de debug com:
+O diretório `android/` contém um projeto Gradle com Activity nativa, WebView oculto e Foreground Service com notificação persistente. A versão atual do APK valida o WebView e a resolução de páginas; ela ainda não hospeda o servidor Node no Android. Gere o APK de debug com:
 
 ```bash
 npm install
 npm run build:apk
 ```
 
-São necessários Android SDK 35, JDK 17, Gradle 8.9+ e o runtime `nodejs-mobile-android`. Em Android 13 ou superior, permita notificações e desative a otimização de bateria para o AVMirror quando o fabricante oferecer essa opção.
+São necessários Android SDK 35, JDK 17 e Gradle 8.9+. Em Android 13 ou superior, permita notificações e desative a otimização de bateria para o AVMirror quando o fabricante oferecer essa opção.
 
 ### Servidor central da casa
 
