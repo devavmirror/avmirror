@@ -12,3 +12,7 @@ O Stremio marcou o Cinemeta como `Addon is protected`, impedindo a desinstalaç�
 ## Catálogo exclusivo
 
 A rota direta do Stremio carregou `AVMirror — Jav.guru — Novos` com os filtros Movie e Genre, exibindo os cards do catálogo AVMirror e o painel de detalhes. Essa é a captura limpa recomendada para mostrar apenas o addon e seu catálogo, sem os addons padrão.
+
+## Recaptura após carregamento completo
+
+A nova captura foi feita somente depois de os cards exibirem os pôsteres e o painel lateral mostrar os detalhes do título selecionado. A imagem anterior, feita durante o carregamento, será substituída por esta versão completa.
