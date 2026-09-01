@@ -59,7 +59,11 @@ A aplicação aceita configurações por variáveis de ambiente. Em produção, 
 | `BASE_URL` | Fonte primária configurável para o catálogo. | Definida pelo servidor |
 | `RENDER_EXTERNAL_URL` | URL pública fornecida automaticamente pelo Render. | Opcional |
 | `RENDER_EXTERNAL_HOSTNAME` | Host público fornecido automaticamente pelo Render. | Opcional |
-| `IMAGE_TIMEOUT_MS` | Tempo limite das requisições de imagens. | `15000` |
+| `IMAGE_TIMEOUT_MS` | Tempo limite das requisições de imagens. | `12000` |
+| `IMAGE_MAX_BYTES` | Tamanho máximo aceito por imagem proxificada. | `4194304` |
+| `IMAGE_CACHE_MAX_ENTRIES` | Quantidade máxima de imagens mantidas em memória. | `120` |
+| `IMAGE_CACHE_MAX_BYTES` | Tamanho total máximo do cache de imagens em memória. | `50331648` |
+| `CACHE_MAX_ENTRIES` | Quantidade máxima de respostas de scraping mantidas em memória. | `500` |
 | `ENABLE_BROWSER_STREAMS` | Permite habilitar resolução dinâmica quando necessária. | Desabilitada por padrão |
 
 Os valores reais de produção devem permanecer fora do controle de versão. O arquivo `.env` não deve ser publicado, e qualquer token temporário deve ser tratado como segredo operacional.

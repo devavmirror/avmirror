@@ -20,10 +20,13 @@ const IMAGE_HOSTS = new Set([
   "pics.pornfhd.com",
   "javrider.com"
 ]);
-const IMAGE_TIMEOUT_MS = Number(process.env.IMAGE_TIMEOUT_MS || 15000);
-const IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+const IMAGE_TIMEOUT_MS = Number(process.env.IMAGE_TIMEOUT_MS || 12000);
+const IMAGE_MAX_BYTES = Number(process.env.IMAGE_MAX_BYTES || 4 * 1024 * 1024);
+const IMAGE_CACHE_MAX_ENTRIES = Number(process.env.IMAGE_CACHE_MAX_ENTRIES || 120);
+const IMAGE_CACHE_MAX_BYTES = Number(process.env.IMAGE_CACHE_MAX_BYTES || 48 * 1024 * 1024);
 const imageCache = new Map();
 const imagePending = new Map();
+let imageCacheBytes = 0;
 const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)www\.av01\.media$|(^|\.)customers\.iw01\.xyz$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$/i;
 const JAV_GENRES = [
   "3P", "Amateur", "Back", "Beautiful Girl", "Big tits", "Blowjob", "Boobs fetish", "Cowgirl",
@@ -237,8 +240,16 @@ async function fetchImage(rawUrl) {
     try {
       const value = await Promise.any(imageCandidates(rawUrl).map(fetchImageCandidate));
       const cachedValue = { ...value, expiresAt: Date.now() + 6 * 60 * 60 * 1000 };
+      const previous = imageCache.get(rawUrl);
+      if (previous) imageCacheBytes -= previous.body.length;
       imageCache.set(rawUrl, cachedValue);
-      if (imageCache.size > 300) imageCache.delete(imageCache.keys().next().value);
+      imageCacheBytes += cachedValue.body.length;
+      while (imageCache.size > IMAGE_CACHE_MAX_ENTRIES || imageCacheBytes > IMAGE_CACHE_MAX_BYTES) {
+        const first = imageCache.entries().next().value;
+        if (!first) break;
+        imageCache.delete(first[0]);
+        imageCacheBytes -= first[1].body.length;
+      }
       return cachedValue;
     } finally { imagePending.delete(rawUrl); }
   })();
@@ -306,8 +317,9 @@ app.disable("x-powered-by");
 // Health and installation UI must be registered before the Stremio router.
 app.get("/health", (_req, res) => res.status(200).json({ ok: true, name: "AVMirror", version: manifest.version }));
 app.get("/install", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));
-app.get("/stremio-addons-installed.webp", (_req, res) => res.sendFile(path.join(__dirname, "public", "stremio-addons-installed.webp")));
-app.get("/stremio-avmirror-catalog.webp", (_req, res) => res.sendFile(path.join(__dirname, "public", "stremio-avmirror-catalog.webp")));
+const staticAssetOptions = { maxAge: "7d", immutable: true };
+app.get("/stremio-addons-installed.webp", (_req, res) => res.sendFile(path.join(__dirname, "public", "stremio-addons-installed.webp"), staticAssetOptions));
+app.get("/stremio-avmirror-catalog.webp", (_req, res) => res.sendFile(path.join(__dirname, "public", "stremio-avmirror-catalog.webp"), staticAssetOptions));
 app.get("/logo.png", (_req, res) => {
   res.set("Cache-Control", "public, max-age=86400");
   res.sendFile(path.join(__dirname, "public", "logo.png"));

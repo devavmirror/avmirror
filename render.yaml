@@ -13,10 +13,20 @@ services:
         value: "https://avmirror.onrender.com"
       - key: CACHE_TTL_MS
         value: "900000"
+      - key: CACHE_MAX_ENTRIES
+        value: "300"
       - key: REQUEST_TIMEOUT_MS
         value: "25000"
       - key: PLAYER_TIMEOUT_MS
         value: "3000"
+      - key: IMAGE_TIMEOUT_MS
+        value: "12000"
+      - key: IMAGE_MAX_BYTES
+        value: "4194304"
+      - key: IMAGE_CACHE_MAX_ENTRIES
+        value: "120"
+      - key: IMAGE_CACHE_MAX_BYTES
+        value: "50331648"
       - key: BROWSER_HEADLESS
         value: "true"
       - key: ENABLE_BROWSER_STREAMS
