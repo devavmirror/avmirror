@@ -1,6 +1,7 @@
 const cheerio = require("cheerio");
 const { chromium } = require("playwright");
 const fs = require("node:fs");
+const path = require("node:path");
 const vm = require("node:vm");
 
 const BASE_URL = (process.env.BASE_URL || "https://jav.guru").replace(/\/+$/, "");
@@ -100,7 +101,10 @@ async function activatePlayerFrames(page, rounds = 2) {
 async function getBrowser() {
   if (!browserPromise) {
     const configuredPath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
-    const candidates = [configuredPath, "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/snap/bin/chromium", "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe", "C:\\Users\\Public\\Chrome\\chrome.exe"].filter(Boolean);
+    const appDir = process.pkg ? path.dirname(process.execPath) : path.resolve(__dirname, "..");
+    const bundledCandidates = process.platform === "win32" ? fs.globSync(path.join(appDir, "chromium", "**", "chrome.exe")) : fs.globSync(path.join(appDir, "chromium", "**", "chrome"));
+    const bundled = bundledCandidates[0];
+    const candidates = [configuredPath, bundled, "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/snap/bin/chromium", "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe", "C:\\Users\\Public\\Chrome\\chrome.exe"].filter(Boolean);
     const executablePath = candidates.find(fs.existsSync);
     if (configuredPath && !fs.existsSync(configuredPath)) console.warn(`PLAYWRIGHT_EXECUTABLE_PATH não existe; usando ${executablePath || "Chromium gerenciado pelo Playwright"}`);
     browserPromise = chromium.launch({ ...(executablePath ? { executablePath } : {}), headless: HEADLESS, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(e => { browserPromise = null; throw e; });

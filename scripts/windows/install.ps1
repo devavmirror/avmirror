@@ -9,9 +9,19 @@ if ([string]::IsNullOrWhiteSpace($ArtifactUrl)) {
   throw 'Informe AVMIRROR_WINDOWS_URL ou passe -ArtifactUrl com a URL do avmirror-win-x64.exe publicado.'
 }
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-$exe = Join-Path $InstallDir 'avmirror-win-x64.exe'
-Invoke-WebRequest -Uri $ArtifactUrl -OutFile $exe -UseBasicParsing
-if (-not (Test-Path $exe) -or (Get-Item $exe).Length -lt 1MB) { throw 'Download do executável inválido ou incompleto.' }
+$download = Join-Path $env:TEMP 'avmirror-windows-bundle.zip'
+Invoke-WebRequest -Uri $ArtifactUrl -OutFile $download -UseBasicParsing
+if (([IO.Path]::GetExtension($ArtifactUrl).ToLowerInvariant()) -eq '.zip') {
+  $tempExtract = Join-Path $env:TEMP ('avmirror-extract-' + [guid]::NewGuid())
+  Expand-Archive -Path $download -DestinationPath $tempExtract -Force
+  $bundle = Get-ChildItem -Path $tempExtract -Directory -Filter 'win-x64' | Select-Object -First 1
+  if (-not $bundle) { $bundle = Get-Item $tempExtract }
+  Copy-Item -Path (Join-Path $bundle.FullName '*') -Destination $InstallDir -Recurse -Force
+} else {
+  Copy-Item -Path $download -Destination (Join-Path $InstallDir 'avmirror.exe') -Force
+}
+$exe = Join-Path $InstallDir 'avmirror.exe'
+if (-not (Test-Path $exe) -or (Get-Item $exe).Length -lt 1MB) { throw 'Download do bundle Windows inválido ou incompleto.' }
 
 $rule = Get-NetFirewallRule -DisplayName 'AVMirror LAN (TCP 7000)' -ErrorAction SilentlyContinue
 if (-not $rule) { New-NetFirewallRule -DisplayName 'AVMirror LAN (TCP 7000)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort $Port -Profile Private | Out-Null }

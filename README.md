@@ -156,13 +156,13 @@ A execução local agora escuta em `0.0.0.0:7000` por padrão, permitindo que ce
 
 ### Windows: instalação automatizada
 
-Os instaladores de usuário final não fazem `git clone`: baixam somente o executável protegido publicado em uma Release.
+Os instaladores de usuário final não fazem `git clone`: baixam o bundle publicado em uma Release, que inclui o executável e o Chromium Playwright necessário.
 
 Abra o PowerShell como Administrador na pasta do projeto e execute:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
-$env:AVMIRROR_WINDOWS_URL = 'https://HOST/RELEASES/avmirror-win-x64.exe'
+$env:AVMIRROR_WINDOWS_URL = 'https://HOST/RELEASES/avmirror-windows-x64-self-contained.zip'
 .\scripts\windows\install.ps1
 ```
 
@@ -185,7 +185,7 @@ sudo apt install ./dist/avmirror-local_26.1.0_amd64.deb
 systemctl status avmirror.service
 ```
 
-O pacote instala o servidor em `/opt/avmirror`, o comando `/usr/bin/avmirror-local` e `avmirror.service`, habilitado no boot e configurado para `BIND_HOST=0.0.0.0`, `PORT=7000`. A porta deve ser liberada no firewall local, se o UFW estiver ativo: `sudo ufw allow 7000/tcp`.
+O pacote instala o servidor, o runtime Node.js e o Chromium Playwright em `/opt/avmirror`, além do comando `/usr/bin/avmirror-local` e `avmirror.service`, habilitado no boot e configurado para `BIND_HOST=0.0.0.0`, `PORT=7000`. A porta deve ser liberada no firewall local, se o UFW estiver ativo: `sudo ufw allow 7000/tcp`.
 
 ### Android / TV Box
 

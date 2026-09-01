@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/node /opt/avmirror/server.js
+ExecStart=/opt/avmirror/node/node /opt/avmirror/server.js
 WorkingDirectory=/opt/avmirror
 Restart=on-failure
 Environment=LOCAL_MODE=true
