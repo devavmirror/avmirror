@@ -31,7 +31,7 @@ const imageCache = new Map();
 const imagePending = new Map();
 let imageCacheBytes = 0;
 const mediaCookies = new Map();
-const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)www\.av01\.media$|(^|\.)customers\.iw01\.xyz$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$/i;
+const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)s1q2105\.com$|(^|\.)cdn-centaurus\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)www\.av01\.media$|(^|\.)customers\.iw01\.xyz$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$/i;
 const JAV_GENRES = [
   "3P", "Amateur", "Back", "Beautiful Girl", "Big tits", "Blowjob", "Boobs fetish", "Cowgirl",
   "Creampie", "Cuckold", "Deep Throat", "Drama", "Drug", "Egg Vibrator", "Electric Massager",
@@ -405,7 +405,11 @@ app.options("/hls", (_req, res) => res.status(204)
 app.get("/hls", async (req, res) => {
   const rawUrl = String(req.query.url || "");
   try {
-    if (!isAllowedMediaUrl(rawUrl)) throw new Error("media host is not allowed");
+    if (!isAllowedMediaUrl(rawUrl)) {
+      let rejectedHost = "invalid-url";
+      try { rejectedHost = new URL(rawUrl).hostname; } catch {}
+      throw new Error(`media host is not allowed: ${rejectedHost}`);
+    }
     const host = new URL(rawUrl).hostname.toLowerCase();
     const luluCode = host.endsWith("tnmr.org") ? rawUrl.match(/\/([^/]+)_h\/master\.m3u8/i)?.[1] : null;
     const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("premilkyway.com") ? "https://jav.guru/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("av01.media") || host.endsWith("iw01.xyz") ? "https://www.av01.media/" : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
