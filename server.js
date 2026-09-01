@@ -131,11 +131,42 @@ function withAv01AccessToken(raw, sourceUrl) {
     return target.href;
   } catch { return raw; }
 }
+const DIRECT_STREAM_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139.0.0.0 Safari/537.36";
+function sourceReferer(rawUrl) {
+  try {
+    const host = new URL(rawUrl).hostname.toLowerCase();
+    if (host.endsWith("javplayers.com") || host.endsWith("akmicdn.com")) return "https://javplayers.com/";
+    if (host.endsWith("turboviplay.com")) return "https://turbovidhls.com/";
+    if (host.endsWith("97bf1.com")) return "https://vidara.to/";
+    if (host.endsWith("tnmr.org")) return "https://streamhihi.com/";
+    if (host === "www.av01.media" || host === "customers.iw01.xyz") return "https://www.av01.media/";
+    if (host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com")) return "https://javhd.name/";
+    return "https://javclan.com/";
+  } catch { return "https://jav.guru/"; }
+}
+function directBehaviorHints(rawUrl, behaviorHints = {}) {
+  const referer = sourceReferer(rawUrl);
+  return {
+    ...behaviorHints,
+    // These headers are sent by the Stremio client to the source, not by Render.
+    proxyHeaders: {
+      ...(behaviorHints.proxyHeaders || {}),
+      request: {
+        ...(behaviorHints.proxyHeaders?.request || {}),
+        "User-Agent": DIRECT_STREAM_USER_AGENT,
+        Referer: referer,
+        Origin: new URL(referer).origin
+      }
+    }
+  };
+}
 function proxiedStreams(streams) {
   // Playback must happen directly at the source. Never route video through Render.
   return streams
     .filter(stream => stream && (stream.url || stream.externalUrl))
-    .map(stream => ({ ...stream, ...(stream.url ? { url: stream.url } : {}) }));
+    .map(stream => stream.url && !stream.externalUrl
+      ? { ...stream, behaviorHints: directBehaviorHints(stream.url, stream.behaviorHints) }
+      : stream);
 }
 function supportStream() {
   return {

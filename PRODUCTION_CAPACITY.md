@@ -20,3 +20,7 @@ Os testes foram executados contra uma única instância local, com o cache do ca
 Os resultados confirmam que a aplicação Node é leve e responde a picos fortes sem erros no ambiente local. Eles não constituem garantia de 6.000 usuários em produção no Render Free, pois CPU, memória, banda, horas de instância, suspensão da plataforma e latência das fontes externas dependem do ambiente hospedado.
 
 Para produção, o catálogo deve permanecer em cache e as métricas de p95, respostas 429/5xx, memória e banda devem ser monitoradas. O fluxo de vídeo foi ajustado para devolver somente a URL direta da fonte; a rota legada `/hls` responde `410 Gone` e não retransmite mídia pelo Render. O teste pode ser repetido com `ENDPOINT=/catalog/movie/avmirror.json LEVELS=3000 DURATION_MS=5000 node load_test.js` depois de aquecer o catálogo.
+
+## Verificação de reprodução direta
+
+O endpoint de streams foi consultado com um item real do catálogo. A resposta retornou uma URL `https://s4.maxstream.org/.../master.m3u8`, sem URL do Render e sem `/hls`; a rota `/hls` respondeu `410 Gone`. A tentativa de baixar essa playlist diretamente a partir do ambiente de teste recebeu `403 Forbidden` da fonte. Isso confirma que a retransmissão pelo Render foi eliminada, mas não permite garantir que toda fonte aceite reprodução direta: algumas podem bloquear o ambiente, exigir regras específicas de acesso ou depender de condições do próprio provedor. Nenhuma fonte foi removida.
