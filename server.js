@@ -21,9 +21,11 @@ const IMAGE_HOSTS = new Set([
   "static2.av01.tv",
   "img1.iw01.xyz",
   "pics.pornfhd.com",
-  "javrider.com"
+  "javrider.com",
+  "javphotos.com"
 ]);
 const IMAGE_TIMEOUT_MS = Number(process.env.IMAGE_TIMEOUT_MS || 12000);
+const MEDIA_TIMEOUT_MS = Number(process.env.MEDIA_TIMEOUT_MS || 30000);
 const IMAGE_MAX_BYTES = Number(process.env.IMAGE_MAX_BYTES || 4 * 1024 * 1024);
 const IMAGE_CACHE_MAX_ENTRIES = Number(process.env.IMAGE_CACHE_MAX_ENTRIES || 120);
 const IMAGE_CACHE_MAX_BYTES = Number(process.env.IMAGE_CACHE_MAX_BYTES || 48 * 1024 * 1024);
@@ -31,7 +33,7 @@ const imageCache = new Map();
 const imagePending = new Map();
 let imageCacheBytes = 0;
 const mediaCookies = new Map();
-const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)s1q2105\.com$|(^|\.)cdn-centaurus\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)www\.av01\.media$|(^|\.)customers\.iw01\.xyz$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$/i;
+const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)s1q2105\.com$|(^|\.)cdn-centaurus\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)www\.av01\.media$|(^|\.)customers\.iw01\.xyz$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)stream\.javhdz\.today$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$/i;
 const JAV_GENRES = [
   "3P", "Amateur", "Back", "Beautiful Girl", "Big tits", "Blowjob", "Boobs fetish", "Cowgirl",
   "Creampie", "Cuckold", "Deep Throat", "Drama", "Drug", "Egg Vibrator", "Electric Massager",
@@ -237,11 +239,12 @@ function isAllowedImageUrl(raw) {
   try {
     const url = new URL(raw);
     const wordpressImage = /\/wp-content\/uploads\//i.test(url.pathname);
+    const javPhotosImage = url.hostname === "javphotos.com" && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
     const av01Image = /^(?:static2?\.av01\.tv|img1\.iw01\.xyz)$/i.test(url.hostname)
       && /^\/media\/videos\/tmb\/\d+\/1\.jpg\/format=(?:jpeg|webp)\/wlv=(?:320|480|800)$/i.test(url.pathname)
       && url.searchParams.has("access_token");
     const bestJavImage = url.hostname === "pics.pornfhd.com" && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
-    return url.protocol === "https:" && IMAGE_HOSTS.has(url.hostname) && (wordpressImage || av01Image || bestJavImage);
+    return url.protocol === "https:" && IMAGE_HOSTS.has(url.hostname) && (wordpressImage || javPhotosImage || av01Image || bestJavImage);
   } catch { return false; }
 }
 
@@ -403,8 +406,11 @@ app.options("/hls", (_req, res) => res.status(204)
   .set("Access-Control-Allow-Headers", "Range, Content-Type")
   .set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges")
   .end());
-app.get("/hls", async (req, res) => {
-  const rawUrl = String(req.query.url || "");
+app.all("/hls", async (req, res) => {
+  if (req.method !== "GET" && req.method !== "HEAD") return res.status(405).set("Allow", "GET, HEAD, OPTIONS").end();
+  let rawUrl = String(req.query.url || "");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), MEDIA_TIMEOUT_MS);
   try {
     if (!isAllowedMediaUrl(rawUrl)) {
       let rejectedHost = "invalid-url";
@@ -416,13 +422,14 @@ app.get("/hls", async (req, res) => {
     const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("premilkyway.com") || host.endsWith("s1q2105.com") || host.endsWith("cdn-centaurus.com") ? "https://jav.guru/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("av01.media") || host.endsWith("iw01.xyz") ? "https://www.av01.media/" : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
     const requestHeaders = { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36", referer, origin: new URL(referer).origin, accept: "*/*" };
     if (req.headers.range) requestHeaders.range = req.headers.range;
-    let response = await fetch(rawUrl, { headers: requestHeaders });
+    if (mediaCookies.get(host)) requestHeaders.cookie = mediaCookies.get(host);
+    let response = await fetch(rawUrl, { headers: requestHeaders, signal: controller.signal });
     rememberMediaCookies(response, host);
     if (response.status === 403 && /(?:www\.av01\.media|customers\.iw01\.xyz)$/i.test(host)) {
       const refreshed = await refreshAv01Manifest(rawUrl);
       if (refreshed) {
         rawUrl = refreshed;
-        response = await fetch(rawUrl, { headers: requestHeaders });
+        response = await fetch(rawUrl, { headers: requestHeaders, signal: controller.signal });
       }
     }
     // LuluStream may require a short-lived cookie from the embed page.
@@ -431,7 +438,7 @@ app.get("/hls", async (req, res) => {
       const cookies = typeof embed.headers.getSetCookie === "function" ? embed.headers.getSetCookie() : [];
       if (cookies.length) {
         requestHeaders.cookie = cookies.map(x => x.split(";", 1)[0]).join("; ");
-        response = await fetch(rawUrl, { headers: requestHeaders });
+        response = await fetch(rawUrl, { headers: requestHeaders, signal: controller.signal });
       }
     }
     if (!response.ok) throw new Error(`media HTTP ${response.status}`);
@@ -445,6 +452,7 @@ app.get("/hls", async (req, res) => {
       res.set("Access-Control-Allow-Origin", "*");
       res.set("Access-Control-Allow-Headers", "Range, Content-Type");
       res.set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges");
+      if (req.method === "HEAD") return res.end();
       return res.send(rewritePlaylist(playlist, rawUrl));
     }
     res.status(response.status);
@@ -458,10 +466,13 @@ app.get("/hls", async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Headers", "Range, Content-Type");
     res.set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges");
+    if (req.method === "HEAD") return res.end();
     return res.send(Buffer.from(await response.arrayBuffer()));
   } catch (e) {
     console.error("hls proxy:", e.message);
     return res.status(502).json({ error: "media unavailable" });
+  } finally {
+    clearTimeout(timer);
   }
 });
 app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));

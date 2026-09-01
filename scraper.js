@@ -99,7 +99,10 @@ async function activatePlayerFrames(page, rounds = 2) {
 
 async function getBrowser() {
   if (!browserPromise) {
-    const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/snap/bin/chromium"].find(fs.existsSync);
+    const configuredPath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
+    const candidates = [configuredPath, "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/snap/bin/chromium"].filter(Boolean);
+    const executablePath = candidates.find(fs.existsSync);
+    if (configuredPath && !fs.existsSync(configuredPath)) console.warn(`PLAYWRIGHT_EXECUTABLE_PATH não existe; usando ${executablePath || "Chromium gerenciado pelo Playwright"}`);
     browserPromise = chromium.launch({ ...(executablePath ? { executablePath } : {}), headless: HEADLESS, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(e => { browserPromise = null; throw e; });
   }
   return browserPromise;

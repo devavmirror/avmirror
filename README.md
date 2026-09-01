@@ -31,10 +31,11 @@ No Ubuntu, também é possível usar o Chromium do sistema, sem baixar o navegad
 ```bash
 sudo apt update
 sudo apt install -y chromium
-PLAYWRIGHT_EXECUTABLE_PATH=/usr/bin/chromium npm run start:local
+unset PLAYWRIGHT_EXECUTABLE_PATH
+npm run start:local
 ```
 
-O código detecta automaticamente `/usr/bin/chromium`, `/usr/bin/chromium-browser` e `/usr/bin/google-chrome`.
+O código detecta automaticamente `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`, `/usr/bin/google-chrome-stable` e `/snap/bin/chromium`. Se `PLAYWRIGHT_EXECUTABLE_PATH` estiver definido para um caminho inexistente, ele emite um aviso e usa o primeiro executável disponível.
 
 ## Execução local
 
@@ -75,6 +76,7 @@ A aplicação aceita configurações por variáveis de ambiente. Em produção, 
 | `IMAGE_MAX_BYTES` | Tamanho máximo aceito por imagem proxificada. | `4194304` |
 | `IMAGE_CACHE_MAX_ENTRIES` | Quantidade máxima de imagens mantidas em memória. | `120` |
 | `IMAGE_CACHE_MAX_BYTES` | Tamanho total máximo do cache de imagens em memória. | `50331648` |
+| `MEDIA_TIMEOUT_MS` | Tempo limite das requisições do proxy local de playlists e segmentos. | `30000` |
 | `CACHE_MAX_ENTRIES` | Quantidade máxima de respostas de scraping mantidas em memória. | `500` |
 | `ENABLE_BROWSER_STREAMS` | Permite habilitar resolução dinâmica quando necessária. | Desabilitada por padrão |
 | `LOCAL_MODE` | Ativa os proxies locais de imagens e HLS. | `false` |
