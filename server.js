@@ -372,8 +372,10 @@ app.get("/image", async (req, res) => {
     res.status(404).json({ error: "image unavailable" });
   }
 });
-// HLS proxy used for playlist variants and segments when the Stremio client
-// cannot fetch JavRider media directly with the required Referer/Origin headers.
+// Video proxy is intentionally disabled: Stremio receives the original source URL.
+// Keep a hard-deny guard before the legacy implementation below so no request can
+// accidentally retransmit media through this service.
+app.all("/hls", (_req, res) => res.status(410).json({ error: "video proxy disabled; use the direct source URL" }));
 app.options("/hls", (_req, res) => res.status(204)
   .set("Access-Control-Allow-Origin", "*")
   .set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
