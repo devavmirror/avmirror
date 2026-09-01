@@ -132,11 +132,10 @@ function withAv01AccessToken(raw, sourceUrl) {
   } catch { return raw; }
 }
 function proxiedStreams(streams) {
+  // Playback must happen directly at the source. Never route video through Render.
   return streams
     .filter(stream => stream && (stream.url || stream.externalUrl))
-    .map(stream => stream.url && !stream.externalUrl
-      ? { ...stream, url: isAllowedMediaUrl(stream.url) ? proxyMediaUrl(stream.url) : stream.url }
-      : stream);
+    .map(stream => ({ ...stream, ...(stream.url ? { url: stream.url } : {}) }));
 }
 function supportStream() {
   return {
@@ -342,6 +341,10 @@ app.get("/image", async (req, res) => {
     res.status(404).json({ error: "image unavailable" });
   }
 });
+// Video proxy is intentionally disabled: Stremio receives the original source URL.
+// Keep a hard-deny guard before the legacy implementation below so no request can
+// accidentally retransmit media through this service.
+app.all("/hls", (_req, res) => res.status(410).json({ error: "video proxy disabled; use the direct source URL" }));
 app.options("/hls", (_req, res) => res.status(204)
   .set("Access-Control-Allow-Origin", "*")
   .set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")

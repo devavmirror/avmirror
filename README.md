@@ -65,8 +65,13 @@ A aplicação aceita configurações por variáveis de ambiente. Em produção, 
 | `IMAGE_CACHE_MAX_BYTES` | Tamanho total máximo do cache de imagens em memória. | `50331648` |
 | `CACHE_MAX_ENTRIES` | Quantidade máxima de respostas de scraping mantidas em memória. | `500` |
 | `ENABLE_BROWSER_STREAMS` | Permite habilitar resolução dinâmica quando necessária. | Desabilitada por padrão |
+| `VIDEO_PROXY` | Não utilizado: o addon sempre retorna a URL direta do stream. | Desativado permanentemente |
 
 Os valores reais de produção devem permanecer fora do controle de versão. O arquivo `.env` não deve ser publicado, e qualquer token temporário deve ser tratado como segredo operacional.
+
+## Reprodução de vídeo
+
+O AVMirror não retransmite vídeo pelo servidor. Os handlers de stream preservam as URLs HTTPS originais das fontes, e a rota legada `/hls` responde `410 Gone` para impedir que qualquer vídeo seja transferido pelo Render. O servidor continua podendo entregar catálogo, metadados, manifesto e imagens proxificadas.
 
 ## Docker
 
