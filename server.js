@@ -12,6 +12,8 @@ const USE_LOCAL_HLS_PROXY = process.env.USE_LOCAL_HLS_PROXY === "1" || process.e
 const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
 const RENDER_HOST = process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : "";
 const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || (LOCAL_MODE ? getLocalBaseUrl(PORT) : process.env.RENDER_EXTERNAL_URL || RENDER_HOST || "https://avmirror.onrender.com")).replace(/\/+$/, "");
+const CACHE_MIRROR_URL = String(process.env.CACHE_MIRROR_URL || "https://raw.githubusercontent.com/devavmirror/avmirror/main/cache").replace(/\/+$/, "");
+const CACHE_MIRROR_TIMEOUT_MS = Number(process.env.CACHE_MIRROR_TIMEOUT_MS || 4000);
 const SOURCE_URL = new URL(process.env.BASE_URL || "https://jav.guru");
 const IMAGE_HOSTS = new Set([
   SOURCE_URL.hostname,
@@ -88,6 +90,25 @@ function proxiedMeta(meta) {
   // source hosts because of hotlink, TLS, or restrictive CDN policies.
   return { ...result, poster: `${PUBLIC_BASE_URL}/image?url=${encodeURIComponent(meta.poster)}` };
 }
+
+async function readCacheMirror(relativePath) {
+  if (!relativePath || !CACHE_MIRROR_URL) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CACHE_MIRROR_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${CACHE_MIRROR_URL}/${relativePath.replace(/^\/+/, "")}`, { signal: controller.signal, headers: { accept: "application/json" } });
+    if (!response.ok) return null;
+    const value = await response.json();
+    return value && typeof value === "object" ? value : null;
+  } catch { return null; } finally { clearTimeout(timer); }
+}
+
+function cacheCatalogPath(sourceId, page, extra) {
+  if (extra?.search || extra?.genre) return null;
+  return `catalog/${encodeURIComponent(sourceId)}/${page}.json`;
+}
+
+function cacheMetaPath(id) { return `meta/${encodeURIComponent(String(id || ""))}.json`; }
 
 function proxyMediaUrl(raw) { return `${PUBLIC_BASE_URL}/hls?url=${encodeURIComponent(raw)}`; }
 function isAllowedMediaUrl(raw) {
@@ -312,6 +333,8 @@ builder.defineCatalogHandler(async ({ id, extra }) => {
   try {
     const page = Math.floor(Number(extra?.skip || 0) / 20) + 1;
     const sourceId = String(id || "");
+    const cached = await readCacheMirror(cacheCatalogPath(sourceId, page, extra));
+    if (cached && Array.isArray(cached.metas) && cached.metas.length) return { ...cached, metas: cached.metas.map(proxiedMeta), cacheMaxAge: 900, staleRevalidate: 3600, staleError: 21600 };
     const isAv01 = sourceId.startsWith("av01");
     const isJavRider = sourceId.startsWith("javrider");
     const metas = isAv01
@@ -334,6 +357,8 @@ builder.defineCatalogHandler(async ({ id, extra }) => {
 builder.defineMetaHandler(async ({ id }) => {
   try {
     const value = String(id || "");
+    const cached = await readCacheMirror(cacheMetaPath(value));
+    if (cached && cached.meta) return { ...cached, meta: proxiedMeta(cached.meta), cacheMaxAge: 3600, staleRevalidate: 7200, staleError: 21600 };
     const meta = value.startsWith("av01:") ? await scrapeAv01Meta(id) : value.startsWith("javrider:") ? await scrapeJavRiderMeta(id) : await scrapeMeta(id);
     return {
       meta: proxiedMeta(meta),

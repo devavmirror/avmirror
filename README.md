@@ -10,6 +10,12 @@ O AVMirror possui dois modos de uso. No **modo direto**, Stremio ou Nuvio recebe
 
 O Render não é requisito do modo direto. O projeto também não depende de um banco de dados central para a resolução básica. O código do provider Nuvio pode ser hospedado em um fork ou espelho Git compatível com o formato aceito pelo aplicativo.
 
+## Cache público e fallback
+
+O addon consulta primeiro o cache versionado no GitHub para páginas de catálogo e metadados sem parâmetros de busca. Quando não existe uma cópia válida, ele usa o scraping dinâmico do servidor configurado, normalmente o Render. URLs de vídeo, tokens e cookies não são gravados no cache porque podem expirar ou depender do endereço do usuário.
+
+O workflow `.github/workflows/update-cache.yml` atualiza o cache a cada seis horas e também pode ser executado manualmente em **Actions → Atualizar cache AVMirror**. O endereço pode ser trocado com `CACHE_MIRROR_URL` quando o usuário preferir GitHub Pages, um CDN ou um fork próprio.
+
 ## Plataformas e recursos
 
 | Plataforma | Componente | Comportamento padrão | Proxy HLS local |
@@ -88,6 +94,8 @@ npm run start:local
 | `BASE_URL` | Fonte primária do catálogo | Configurada pelo servidor |
 | `LOCAL_MODE` | Habilita recursos locais | `false` |
 | `USE_LOCAL_HLS_PROXY` | Ativa o proxy HLS local | `false` |
+| `CACHE_MIRROR_URL` | Origem JSON do cache público | Cache GitHub do projeto |
+| `CACHE_MIRROR_TIMEOUT_MS` | Tempo máximo de consulta ao cache | `4000` |
 | `ENABLE_BROWSER_STREAMS` | Permite resolução com navegador | Conforme ambiente |
 | `PLAYWRIGHT_EXECUTABLE_PATH` | Caminho opcional do Chromium | Automático |
 
@@ -102,6 +110,7 @@ Não coloque tokens, cookies, senhas ou URLs privadas no repositório. Use vari�
 | `/health` | Verificação de saúde |
 | `/api/local-info` | Informações e links da rede local |
 | `/hls` | Proxy HLS somente quando o modo local estiver ativado |
+| `/cache` | Arquivos versionados de catálogo/metadados quando publicados |
 
 ## Builds de distribuição
 
@@ -140,6 +149,8 @@ Os testes automatizados verificam IDs, catálogo, metadados, resolução de stre
 | `javrider.js` | Integração com a fonte JavRider |
 | `nuvio/manifest.json` | Registro do plugin scraper Nuvio |
 | `nuvio/providers/avmirror.js` | Provider Nuvio sem backend obrigatório |
+| `scripts/update-cache.js` | Geração determinística do cache público |
+| `.github/workflows/update-cache.yml` | Atualização automática do cache |
 | `public/install.html` | Página pública de instalação |
 | `scripts/` | Inicialização, builds e empacotamento |
 | `test/` | Testes automatizados |

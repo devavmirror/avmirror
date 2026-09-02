@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-09-02T04:01:04.605Z",
+  "ttlSeconds": 21600,
+  "catalogs": [
+    {
+      "source": "avmirror",
+      "page": 1,
+      "count": 24
+    },
+    {
+      "source": "avmirror-popular",
+      "page": 1,
+      "count": 24
+    },
+    {
+      "source": "av01",
+      "page": 1,
+      "count": 20
+    },
+    {
+      "source": "av01-popular",
+      "page": 1,
+      "count": 20
+    },
+    {
+      "source": "javrider",
+      "page": 1,
+      "count": 12
+    },
+    {
+      "source": "javrider-popular",
+      "page": 1,
+      "count": 12
+    }
+  ],
+  "metadata": []
+}
