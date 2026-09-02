@@ -12,10 +12,11 @@ async function check(path, expected = 200) {
   await check("/health");
   const manifest = await check("/manifest.json");
   const parsed = JSON.parse(manifest);
-  if (parsed.id !== "com.avmirror.addon") throw new Error("manifesto inesperado");
-  await check("/catalog/movie/javrider.json");
-  await check("/catalog/movie/av01.json");
-  console.log("smoke local: OK");
+  if (parsed.id !== "com.avmirror.addon.local") throw new Error("manifesto local inesperado");
+  if (JSON.stringify(parsed.idPrefixes) !== JSON.stringify(["jable:"])) throw new Error("prefixos de fonte inesperados");
+  await check("/catalog/movie/jable.json");
+  await check("/catalog/movie/jable-popular.json");
+  console.log("smoke local Jable: OK");
 })().catch(error => {
   console.error(error.message);
   process.exitCode = 1;

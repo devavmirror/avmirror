@@ -4,7 +4,7 @@ const JavaScriptObfuscator = require("javascript-obfuscator");
 
 const root = path.resolve(__dirname, "..");
 const out = path.join(root, "dist", "protected");
-const files = ["server.js", "scraper.js", "av01.js", "javrider.js", "scripts/start-local.js"];
+const files = ["server.js", "jable.js", "scripts/start-local.js"];
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 for (const relative of files) {

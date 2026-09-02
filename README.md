@@ -1,208 +1,150 @@
 # AVMirror 26.1
 
-O AVMirror é uma solução multiplataforma para catálogo e reprodução de fontes autorizadas. O projeto separa o servidor local do Stremio, o addon de catálogo do Nuvio e o plugin opcional de resolução direta.
+O AVMirror é um addon descentralizado para Stremio. Cada computador executa uma instância própria do servidor, consulta a Jable.TV diretamente, resolve os players localmente e entrega catálogo, metadados e mídia ao Stremio. Não há dependência de Render, cache central, proxy remoto ou servidor compartilhado para o funcionamento do addon.
 
-> **Versão do aplicativo: 26.1**
+> **Modelo de execução:** o computador que executa o AVMirror é o dono do servidor, do cache em memória e do tráfego entre o Stremio e a fonte externa.
 
-## 1. Arquitetura em uma visão
+## Arquitetura local
 
-| Ambiente | Componente principal | Função | Proxy |
-| --- | --- | --- | --- |
-| Windows/Linux + Stremio | **AVMirror Local** | Catálogo, metadados, resolução e servidor local | HLS local por padrão |
-| Nuvio | **Addon de catálogo** | Catálogo, metadados e posters | Não transporta vídeo por si só |
-| Nuvio | **Plugin resolver** | Resolução complementar diretamente no aparelho | URL direta no dispositivo |
-| GitHub | **Cache público** | Catálogo e metadados versionados | Não armazena vídeos |
-| Render | **Fallback online** | Scraping dinâmico quando não há cache | Proxy de vídeo desativado |
+| Componente | Responsabilidade | Onde executa |
+| --- | --- | --- |
+| AVMirror Local | Manifesto, catálogo, metadados, resolução do HLS e proxy opcional | Computador do usuário |
+| Jable.TV | Fonte única de catálogo, páginas de detalhe e players | Internet |
+| Stremio | Cliente que consulta o manifesto e reproduz o stream | Computador ou dispositivo do usuário |
+| Nuvio provider | Resolver opcional para IDs `jable:` sem catálogo próprio | Dispositivo do usuário |
 
-O Render não é necessário para o servidor local. No modo direto, o player acessa a fonte original. No modo local, o proxy HLS retransmite somente pelo computador do usuário.
+O servidor usa Chromium/Playwright para carregar as páginas da Jable.TV, porque o acesso HTTP simples pode receber um desafio Cloudflare. O módulo extrai o `hlsUrl` criado pela página, ignora a prévia MP4 e os URLs promocionais, e retorna a playlist HLS ao Stremio. No modo local, o proxy HLS retransmite a playlist e os segmentos pelo computador do usuário para atender clientes que não repassam corretamente os headers.
 
-## 2. Stremio — AVMirror Local
+## Instalação no Stremio
 
-O servidor local é o modo principal para Stremio em Windows e Linux. Instale o programa correspondente à sua plataforma, inicie-o e adicione ao Stremio:
-
-```text
-http://IP-DO-COMPUTADOR:7000/manifest.json
-```
-
-O manifesto local aparece como **AVMirror Local** e usa o identificador técnico `com.avmirror.addon.local`. O proxy HLS local é usado por padrão para que o Stremio Android consiga reproduzir manifests assinados, segmentos e fontes que exigem headers. Para forçar URLs diretas, defina `USE_LOCAL_HLS_PROXY=false`.
-
-Para iniciar o servidor local com o proxy HLS — comportamento padrão:
+Instale as dependências e inicie o servidor no computador que ficará ligado durante o uso:
 
 ```bash
-LOCAL_MODE=true \
-BIND_HOST=0.0.0.0 \
-PORT=7000 \
-node server.js
+npm ci
+npx playwright install chromium
+LOCAL_MODE=true BIND_HOST=0.0.0.0 PORT=7000 npm start
 ```
 
-A configuração equivalente, explícita, é:
+Abra a página abaixo no próprio computador servidor:
+
+```text
+http://127.0.0.1:7000/install
+```
+
+Para instalar o addon no Stremio do mesmo computador, use:
+
+```text
+http://127.0.0.1:7000/manifest.json
+```
+
+Para instalar em outro dispositivo da mesma rede, substitua `127.0.0.1` pelo IP LAN do computador servidor, por exemplo:
+
+```text
+http://192.168.1.50:7000/manifest.json
+```
+
+O computador e o dispositivo cliente precisam estar na mesma rede, e a porta `7000` deve estar liberada no firewall. A página `/install` mostra o endereço local calculado e cria o link de instalação `stremio://` automaticamente.
+
+## Fonte e catálogo
+
+O manifesto expõe somente a Jable.TV:
+
+| Catálogo | Rota consultada |
+| --- | --- |
+| AVMirror — Jable.TV — Novos | `/latest-updates/` e `/latest-updates/{página}/` |
+| AVMirror — Jable.TV — Populares | `/hot/` e `/hot/{página}/` |
+| Pesquisa | `/search/{termo}/` |
+| Gênero/tag | `/tags/{slug}/` e `/tags/{slug}/{página}/` |
+
+Os IDs dos filmes usam o formato `jable:<base64url-da-página-de-vídeo>`. O servidor aceita somente páginas no padrão `https://jable.tv/videos/{slug}/`; IDs antigos de outras fontes são rejeitados.
+
+## Reprodução dos players
+
+O fluxo de reprodução é:
+
+```text
+Stremio → servidor AVMirror no computador → Jable.TV/CDN HLS
+```
+
+O servidor extrai a playlist HLS do script da página de detalhe e retorna um stream com `Referer`, `Origin` e `User-Agent` compatíveis. Com `USE_LOCAL_HLS_PROXY=true`, que é o padrão no modo local, o URL entregue ao Stremio aponta para `/hls/...` no próprio computador. O proxy reescreve as referências relativas da playlist para que os segmentos `.ts` e a chave AES-128 também passem pelo mesmo servidor local.
+
+Se o cliente conseguir repassar headers corretamente e você preferir evitar o proxy, é possível usar:
 
 ```bash
-LOCAL_MODE=true \
-USE_LOCAL_HLS_PROXY=true \
-BIND_HOST=0.0.0.0 \
-PORT=7000 \
-node server.js
+LOCAL_MODE=true USE_LOCAL_HLS_PROXY=false BIND_HOST=0.0.0.0 PORT=7000 npm start
 ```
 
-Para forçar URLs diretas no servidor local, use `USE_LOCAL_HLS_PROXY=false`.
+O modo direto depende do suporte do cliente Stremio a `Referer`, `Origin` e URLs HLS com tokens temporários. Para Stremio Android/TV, o proxy local é a opção recomendada.
 
-A página de configuração fica disponível em:
+## Nuvio opcional
 
-```text
-http://IP-DO-COMPUTADOR:7000/install
-```
-
-## 3. Nuvio — addon de catálogo
-
-O addon padrão é compatível com Nuvio e Stremio e expõe os recursos `catalog`, `meta` e `stream`. Ele contém catálogos AVMirror/Jav.guru, AV01 e JavRider.
-
-No Nuvio, instale o manifesto do servidor escolhido:
-
-```text
-https://SEU-ENDERECO/manifest.json
-```
-
-Para usar um servidor pessoal:
-
-```text
-http://IP-DO-COMPUTADOR:7000/manifest.json
-```
-
-No modo online, o manifesto usa o identificador `com.avmirror.addon`. No modo local, usa `com.avmirror.addon.local`, permitindo diferenciar as duas instalações.
-
-## 4. Nuvio — plugin resolver
-
-O plugin é opcional e não cria um segundo catálogo. Ele complementa o addon de catálogo e tenta resolver streams diretamente no aparelho:
+O plugin em `nuvio/` não cria uma fonte adicional. Ele reconhece apenas IDs `jable:` e tenta extrair o `hlsUrl` diretamente no dispositivo que executa o Nuvio. O addon local continua sendo a opção principal quando o dispositivo não consegue passar pelo desafio do site ou não suporta os headers exigidos:
 
 ```text
 https://raw.githubusercontent.com/devavmirror/avmirror/main/nuvio/manifest.json
 ```
 
-Instalação: **Nuvio → Configurações → Plugins**.
+## Desenvolvimento e testes
 
-O provider exporta `getStreams(id, mediaType, season, episode)` e reconhece IDs `av01:`, `avmirror:` e `javrider:`. Para AV01, ele gera o token e consulta a fonte no próprio dispositivo. Para as outras fontes, tenta extrair URLs diretas `.m3u8` e `.mp4`.
-
-O plugin usa `fetch`, Promises e APIs JavaScript básicas. Ele não usa Node.js, Express, Playwright, filesystem ou credenciais. Fontes que exigem navegador completo, cookies persistentes ou reescrita contínua podem exigir o addon local com proxy.
-
-## 5. Proxy HLS local para Stremio Android
-
-Quando uma fonte não funciona diretamente no player, use o servidor local. O celular e o computador precisam estar na mesma rede Wi‑Fi; o proxy roda no computador e o Stremio acessa o manifesto pelo IP local:
-
-```bash
-LOCAL_MODE=true \
-USE_LOCAL_HLS_PROXY=true \
-BIND_HOST=0.0.0.0 \
-PORT=7000 \
-node server.js
-```
-
-Fluxo:
-
-```text
-Stremio/Nuvio → AVMirror Local → proxy HLS no PC → fonte original
-```
-
-O servidor remoto não retransmite vídeo. A rota `/hls` é usada somente no modo local quando `USE_LOCAL_HLS_PROXY` está ativo — por padrão, quando `LOCAL_MODE=true`. O plugin Nuvio permanece separado e tenta resolver streams diretamente no próprio aparelho.
-
-## 6. Cache GitHub e fallback do Render
-
-O servidor consulta primeiro o cache público para páginas de catálogo e metadados sem busca ou filtro. O cache fica em `cache/` e não contém vídeos, tokens ou URLs temporárias.
-
-Se a cópia não existir, estiver indisponível ou não for adequada à consulta, o servidor usa o scraping dinâmico configurado. Por padrão, o espelho é:
-
-```text
-https://raw.githubusercontent.com/devavmirror/avmirror/main/cache
-```
-
-A origem pode ser alterada com `CACHE_MIRROR_URL`. O workflow `.github/workflows/update-cache.yml` atualiza o cache a cada seis horas e também pode ser iniciado manualmente no GitHub Actions.
-
-## 7. Downloads 26.1
-
-- [Windows x64 — AVMirror Local 26.1](https://github.com/devavmirror/avmirror/releases/download/v26.1/avmirror-windows_26.1-autoupdate.zip)
-- [Ubuntu/Debian amd64 — AVMirror Local 26.1](https://github.com/devavmirror/avmirror/releases/download/v26.1/avmirror-linux_26.1_amd64.deb)
-- [Checksums SHA-256](https://github.com/devavmirror/avmirror/releases/download/v26.1/SHA256SUMS-v26.1.txt)
-
-O bundle Windows inclui launcher, runtime Node, Chromium e aplicação inicial. O pacote Linux inclui serviço systemd, runtime Node, Chromium e atalho **AVMirror Local** no menu de aplicativos.
-
-## 8. Atualização automática
-
-Os dois programas verificam o commit atual do branch `main` ao iniciar. Quando há código novo, o launcher baixa a aplicação, valida `server.js`, troca a cópia ativa e inicia o servidor atualizado. Falhas de rede preservam a última cópia funcional.
-
-O mecanismo atualiza fontes, catálogo, metadados e funções do servidor sem novo empacotamento. Um novo bundle só é necessário quando mudar o launcher, o runtime Node, o Chromium ou a arquitetura do sistema.
-
-Para desativar:
-
-```bash
-AVMIRROR_AUTO_UPDATE=false
-```
-
-## 9. Instalação e diagnóstico
-
-No Windows, extraia o ZIP e execute o launcher. No Ubuntu/Debian:
-
-```bash
-sudo apt install ./avmirror-linux_26.1_amd64.deb
-```
-
-Verifique o servidor:
-
-```bash
-curl http://127.0.0.1:7000/health
-```
-
-Verifique o serviço Linux:
-
-```bash
-systemctl status avmirror
-```
-
-O cliente e o computador servidor devem estar na mesma rede quando o manifesto local for usado. Libere a porta `7000` no firewall se necessário.
-
-## 10. Endpoints
-
-| Endpoint | Finalidade |
-| --- | --- |
-| `/install` | Página de instalação, diagnóstico e downloads |
-| `/manifest.json` | Manifesto do addon |
-| `/catalog/...` | Catálogo e busca |
-| `/meta/...` | Metadados |
-| `/stream/...` | Resolução de streams |
-| `/health` | Saúde do servidor |
-| `/api/local-info` | IP, modo e proxy ativos |
-| `/hls` | Proxy HLS local para o Stremio Android |
-
-## 11. Estrutura do projeto
-
-| Caminho | Responsabilidade |
-| --- | --- |
-| `server.js` | Addon, endpoints, resolução e proxy local |
-| `scraper.js` | Catálogo e fontes Jav.guru |
-| `av01.js` | Catálogo, metadados e streams AV01 |
-| `javrider.js` | Catálogo, metadados e streams JavRider |
-| `nuvio/manifest.json` | Manifesto do plugin Nuvio |
-| `nuvio/providers/avmirror.js` | Resolver Nuvio direto |
-| `scripts/auto-update.js` | Launcher autoatualizável |
-| `scripts/update-cache.js` | Geração do cache público |
-| `.github/workflows/update-cache.yml` | Atualização automática do cache |
-| `public/install.html` | Página de instalação |
-| `packaging/` | Serviço e lançador Linux |
-
-## 12. Testes
+Os testes unitários não dependem do site externo:
 
 ```bash
 npm test
 node --check server.js
+node --check jable.js
 node --check nuvio/providers/avmirror.js
-node --check scripts/auto-update.js
-npm run cache:update
+node --check scripts/start-local.js
 ```
 
-Os testes verificam catálogo, metadados, resolução, validação de URLs, proxy HLS, manifesto Nuvio e comportamento do cache. Testes live dependem da disponibilidade das fontes externas.
+Para testar o fluxo contra a fonte real, com Chromium instalado:
+
+```bash
+node scripts/test-live-sources.js
+node scripts/e2e-local.js
+```
+
+O smoke test de uma instância já iniciada pode ser executado com:
+
+```bash
+node scripts/smoke-local.js
+```
+
+O cache em `cache/` é opcional e não é consultado pelo servidor local. Se for necessário gerar uma fotografia local de catálogo/metadados para diagnóstico, use:
+
+```bash
+CACHE_PAGES=1 CACHE_META_LIMIT=10 node scripts/update-cache.js
+```
+
+## Estrutura principal
+
+| Caminho | Responsabilidade |
+| --- | --- |
+| `server.js` | Servidor local, manifesto, endpoints e proxy HLS |
+| `jable.js` | Catálogo, metadados, resolução do player e validação da Jable.TV |
+| `nuvio/manifest.json` | Manifesto do resolver opcional |
+| `nuvio/providers/avmirror.js` | Resolver direto exclusivo para IDs `jable:` |
+| `scripts/start-local.js` | Inicialização local e abertura da página de instalação |
+| `scripts/update-cache.js` | Geração opcional de snapshot local Jable |
+| `public/install.html` | Página de instalação e diagnóstico |
+| `test/jable.test.js` | Testes determinísticos da integração |
+
+## Endpoints locais
+
+| Endpoint | Finalidade |
+| --- | --- |
+| `/install` | Instalação e diagnóstico do servidor local |
+| `/health` | Verificação de saúde |
+| `/manifest.json` | Manifesto do addon local |
+| `/catalog/...` | Catálogos Jable e pesquisa |
+| `/meta/...` | Metadados de um vídeo Jable |
+| `/stream/...` | Streams HLS resolvidos localmente |
+| `/image?url=...` | Proxy de capas da Jable.TV |
+| `/hls/...` | Proxy HLS local para playlist, segmentos e chave |
+| `/api/local-info` | Endereço LAN e configuração do proxy |
 
 ## Uso responsável
 
-Use o projeto somente com fontes, mídias e integrações para as quais você possui autorização. Respeite a legislação aplicável, os termos dos serviços integrados e os direitos dos titulares do conteúdo.
+Use o projeto somente com fontes, mídias e integrações para as quais você possui autorização. Respeite a legislação aplicável, os termos dos serviços integrados e os direitos dos titulares do conteúdo. A fonte Jable.TV é adulta; o manifesto mantém `behaviorHints.adult: true`.
 
 ## Licença
 
@@ -211,5 +153,4 @@ Consulte `LICENSE` para os termos aplicáveis ao código.
 ## Referências
 
 [1]: https://www.stremio.com/ "Stremio"
-[2]: https://nuvio.tv/ "Nuvio"
-[3]: https://github.com/yoruix/nuvio-providers "Exemplos públicos de providers Nuvio"
+[2]: https://jable.tv/ "Jable.TV"

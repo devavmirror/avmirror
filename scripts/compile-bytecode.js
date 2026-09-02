@@ -3,7 +3,7 @@ const path = require("node:path");
 const bytenode = require("bytenode");
 const root = path.resolve(__dirname, "..");
 const out = path.join(root, "dist", "bytecode");
-const files = ["server.js", "scraper.js", "av01.js", "javrider.js"];
+const files = ["server.js", "jable.js"];
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 for (const relative of files) {

@@ -1,35 +1,26 @@
-const { scrapeCatalog, scrapeMeta, scrapeStreams, closeBrowser } = require("../scraper");
-const { scrapeAv01Catalog, scrapeAv01Meta, scrapeAv01Streams } = require("../av01");
-const { scrapeJavRiderCatalog, scrapeJavRiderMeta, scrapeJavRiderStreams, closeJavRiderBrowser } = require("../javrider");
+const { scrapeJableCatalog, scrapeJableMeta, scrapeJableStreams, closeJableBrowser } = require("../jable");
 const fs = require("node:fs/promises");
 
-async function one(label, catalog, meta, streams, options) {
-  const result = { label, catalog: { ok: false }, meta: { ok: false }, streams: { ok: false } };
+async function main() {
+  const result = { label: "Jable.TV", catalog: { ok: false }, meta: { ok: false }, streams: { ok: false } };
   try {
-    const items = await catalog(options);
+    const items = await scrapeJableCatalog({ page: 1, mode: "jable" });
     result.catalog = { ok: Array.isArray(items) && items.length > 0, count: Array.isArray(items) ? items.length : 0 };
     const item = items?.[0];
     if (!item?.id) throw new Error("catalog returned no usable item");
-    const metadata = await meta(item.id);
+    const metadata = await scrapeJableMeta(item.id);
     result.meta = { ok: !!metadata, id: item.id, name: metadata?.name || null };
-    const found = await streams(item.id);
-    result.streams = { ok: Array.isArray(found) && found.some(s => /^https?:\/\//i.test(s?.url || "")), count: Array.isArray(found) ? found.length : 0, urls: (found || []).slice(0, 3).map(s => s.url).filter(Boolean) };
+    const found = await scrapeJableStreams(item.id);
+    result.streams = {
+      ok: Array.isArray(found) && found.some(stream => /\.m3u8(?:[?#]|$)/i.test(stream?.url || "")),
+      count: Array.isArray(found) ? found.length : 0,
+      urls: (found || []).slice(0, 3).map(stream => stream.url).filter(Boolean)
+    };
   } catch (error) { result.error = error.message; }
   console.log(JSON.stringify(result));
-  return result;
+  await fs.writeFile("/tmp/avmirror-jable-live-results.json", JSON.stringify(result, null, 2) + "\n");
+  await closeJableBrowser();
+  if (!(result.catalog.ok && result.meta.ok && result.streams.ok)) process.exitCode = 1;
 }
 
-(async () => {
-  const results = [];
-  try {
-    results.push(await one("AVMirror/Jav.guru", scrapeCatalog, scrapeMeta, scrapeStreams, { page: 1, search: "", genre: "", mode: "avmirror" }));
-    results.push(await one("AV01", scrapeAv01Catalog, scrapeAv01Meta, scrapeAv01Streams, { page: 1, search: "", genre: "", mode: "av01" }));
-    results.push(await one("JavRider", scrapeJavRiderCatalog, scrapeJavRiderMeta, scrapeJavRiderStreams, { page: 1, search: "", genre: "", mode: "javrider" }));
-  } finally {
-    await Promise.allSettled([closeBrowser(), closeJavRiderBrowser()]);
-  }
-  await fs.writeFile("/tmp/avmirror-live-results.json", JSON.stringify(results, null, 2) + "\n");
-  const passed = results.filter(r => r.catalog.ok && r.meta.ok && r.streams.ok).length;
-  console.log(`LIVE_RESULT ${passed}/${results.length}`);
-  if (passed !== results.length) process.exitCode = 1;
-})();
+main().catch(async error => { console.error(error); await closeJableBrowser(); process.exitCode = 1; });
