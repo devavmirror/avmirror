@@ -23,6 +23,8 @@ EOF
 chmod 0755 "$PKG/usr/bin/avmirror-local"
 cp "$ROOT/packaging/systemd/avmirror.service" "$PKG/etc/systemd/system/avmirror.service"
 cp "$ROOT/packaging/avmirror.desktop" "$PKG/usr/share/applications/avmirror.desktop"
+cp "$ROOT/packaging/avmirror-local-open" "$PKG/usr/bin/avmirror-local-open"
+chmod 0755 "$PKG/usr/bin/avmirror-local-open"
 cat > "$PKG/DEBIAN/control" <<EOF
 Package: avmirror-local
 Version: $VERSION

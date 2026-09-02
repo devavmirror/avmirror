@@ -38,6 +38,10 @@ async function update() {
     const next = path.join(root, "app-next");
     fs.rmSync(next, { recursive: true, force: true });
     fs.cpSync(extracted, next, { recursive: true });
+    for (const preserved of ["node_modules", "chromium"]) {
+      const current = path.join(appDir, preserved);
+      if (fs.existsSync(current)) fs.cpSync(current, path.join(next, preserved), { recursive: true });
+    }
     const old = path.join(root, "app-previous");
     fs.rmSync(old, { recursive: true, force: true });
     if (fs.existsSync(appDir)) fs.renameSync(appDir, old);

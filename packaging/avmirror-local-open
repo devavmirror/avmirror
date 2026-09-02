@@ -1,0 +1,12 @@
+#!/bin/sh
+set -u
+if ! systemctl is-active --quiet avmirror 2>/dev/null; then
+  if command -v pkexec >/dev/null 2>&1; then pkexec systemctl start avmirror || true; fi
+fi
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -fsS --max-time 1 http://127.0.0.1:7000/health >/dev/null 2>&1; then
+    exec xdg-open http://127.0.0.1:7000/install
+  fi
+  sleep 1
+done
+exec xdg-open http://127.0.0.1:7000/install

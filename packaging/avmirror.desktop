@@ -2,7 +2,7 @@
 Type=Application
 Name=AVMirror Local
 Comment=Servidor local AVMirror para Stremio
-Exec=xdg-open http://127.0.0.1:7000/install
+Exec=avmirror-local-open
 Icon=applications-internet
 Terminal=false
 Categories=AudioVideo;Network;
