@@ -74,8 +74,32 @@
     <section class="border-t border-white/10 py-8 text-center text-xs leading-6 text-gray-500"><p>O addon é independente para Stremio e Nuvio. Use apenas fontes e conteúdos para os quais você possui autorização.</p><p class="mt-2"><a id="manifest-link" href="#" class="text-gray-300 hover:text-avpink">Manifesto</a></p></section>
   </main>
   <script>
-    const manifest=location.origin+'/manifest.json';document.getElementById('manifest-url').textContent=manifest;document.getElementById('manifest-link').href=manifest;document.getElementById('install').href='stremio://'+location.host+'/manifest.json';
-    document.getElementById('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(manifest);document.getElementById('copied').textContent='Manifesto copiado.'}catch{document.getElementById('copied').textContent='Copie o endereço manualmente.'}});
+    const manifestNode=document.getElementById('manifest-url');
+    const installButton=document.getElementById('install');
+    const copyButton=document.getElementById('copy');
+    const copiedNode=document.getElementById('copied');
+    let manifest=location.origin+'/manifest.json';
+    function applyServer(baseUrl){
+      manifest=baseUrl.replace(/\/$/,'')+'/manifest.json';
+      manifestNode.textContent=manifest;
+      document.getElementById('manifest-link').href=manifest;
+      installButton.href='stremio://'+new URL(baseUrl).host+'/manifest.json';
+    }
+    applyServer(location.origin);
+    fetch('/api/local-info',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(info=>{if(info&&info.baseUrl)applyServer(info.baseUrl)}).catch(()=>{});
+    installButton.addEventListener('click',async event=>{
+      event.preventDefault();
+      const original=installButton.textContent;
+      installButton.textContent='Verificando servidor...';
+      try{
+        const response=await fetch('/health',{cache:'no-store'});
+        if(!response.ok)throw new Error('health');
+        location.href=installButton.href;
+      }catch{
+        copiedNode.textContent='Servidor indisponível. Abra esta página pelo endereço do computador que executa o AVMirror.';
+      }finally{installButton.textContent=original}
+    });
+    copyButton.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(manifest);copiedNode.textContent='Manifesto copiado.'}catch{copiedNode.textContent='Copie o endereço manualmente.'}});
   </script>
 </body>
 </html>
