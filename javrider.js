@@ -189,10 +189,12 @@ async function scrapeJavRiderStreams(id) {
     const streams = [...media].slice(0, 10).map((mediaUrl, index) => {
       const isHls = /\.m3u8|master\.txt|\/cdn\/hls\//i.test(mediaUrl);
       const behaviorHints = isHls ? { notWebReady: false, bingeGroup: "javrider" } : {};
+      let headers = { Referer: url, "User-Agent": USER_AGENT };
       try {
-        behaviorHints.proxyHeaders = { request: { Referer: url, Origin: new URL(url).origin } };
+        headers.Origin = new URL(url).origin;
+        behaviorHints.proxyHeaders = { request: { Referer: url, Origin: headers.Origin, "User-Agent": USER_AGENT } };
       } catch {}
-      return { name: "AVMirror", title: `JavRider • ${isHls ? "HLS" : "MP4"}${index ? ` ${index + 1}` : ""}`, url: mediaUrl, behaviorHints };
+      return { name: "AVMirror", title: `JavRider • ${isHls ? "HLS" : "MP4"}${index ? ` ${index + 1}` : ""}`, url: mediaUrl, headers, behaviorHints };
     });
     return streams.length ? cacheSet(key, streams) : [];
   } catch (error) { console.error("javrider streams:", error.message); return []; }

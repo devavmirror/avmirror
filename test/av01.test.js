@@ -105,7 +105,8 @@ test("AV01 streams expose the official master manifest with CDN access", async (
       name: "AVMirror",
       title: "AV01 • Auto",
       url: "https://www.av01.media/api/v1/videos/777777/manifest/master.m3u8?access_token=stream-token",
-      behaviorHints: { notWebReady: false, bingeGroup: "av01" }
+      behaviorHints: { notWebReady: false, bingeGroup: "av01" },
+      headers: { Referer: "https://www.av01.media/", Origin: "https://www.av01.media", "User-Agent": process.env.USER_AGENT || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36" }
     }]);
     assert.deepEqual(await scrapeAv01Streams("avmirror:777777"), []);
   } finally {

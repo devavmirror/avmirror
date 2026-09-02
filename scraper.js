@@ -523,6 +523,7 @@ function formatStreams(found, players, pageUrl) {
       name: "AVMirror",
       title: `${x.source} • ${streamQuality(x)}`,
       url: x.url,
+      headers: { Referer: referer, Origin: new URL(referer).origin },
       behaviorHints
     };
   }).slice(0, 20);

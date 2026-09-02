@@ -250,7 +250,8 @@ async function scrapeAv01Streams(id) {
     name: "AVMirror",
     title: "AV01 • Auto",
     url,
-    behaviorHints: { notWebReady: false, bingeGroup: "av01" }
+    behaviorHints: { notWebReady: false, bingeGroup: "av01" },
+    headers: { Referer: `${AV01_BASE_URL}/`, Origin: AV01_BASE_URL, "User-Agent": USER_AGENT }
   }], 120000);
 }
 

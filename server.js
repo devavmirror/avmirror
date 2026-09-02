@@ -229,7 +229,11 @@ function proxiedStreams(streams) {
         return { ...stream, url: proxyMediaUrl(stream.url), behaviorHints: stream.behaviorHints || {} };
       }
       // Render never retransmits video; remote deployments deliver the source URL.
-      return { ...stream, behaviorHints: directBehaviorHints(stream.url, stream.behaviorHints) };
+      // Keep both representations because mobile clients differ in how they
+      // apply Stremio's proxyHeaders contract to direct playback.
+      const behaviorHints = directBehaviorHints(stream.url, stream.behaviorHints);
+      const requestHeaders = behaviorHints.proxyHeaders?.request || {};
+      return { ...stream, headers: { ...(stream.headers || {}), ...requestHeaders }, behaviorHints };
     });
 }
 function supportStream() {

@@ -88,6 +88,9 @@ test("JavRider streams build the HLS master from subtitle CDN hash", async () =>
     const streams = await scrapeJavRiderStreams(id);
     assert.equal(streams.length, 1);
     assert.equal(streams[0].url, "https://javplayers.com/cdn/hls/68fc6bc32023b787bb75692a78549a93/master.txt");
+    assert.equal(streams[0].headers.Referer, article);
+    assert.equal(streams[0].headers.Origin, "https://javrider.com");
+    assert.equal(streams[0].headers["User-Agent"], process.env.USER_AGENT || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139 Safari/537.36");
     assert.match(streams[0].title, /HLS/);
   } finally { global.fetch = originalFetch; }
 });
@@ -101,6 +104,8 @@ test("JavRider streams accept a direct HTML5 MP4 source", async () => {
     const streams = await scrapeJavRiderStreams(id);
     assert.equal(streams.length, 1);
     assert.equal(streams[0].url, media);
+    assert.equal(streams[0].headers.Referer, article);
+    assert.equal(streams[0].headers.Origin, "https://javrider.com");
   } finally { global.fetch = originalFetch; await closeJavRiderBrowser(); }
 });
 
