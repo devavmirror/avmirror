@@ -4,102 +4,38 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0a0a0a">
-  <meta name="description" content="AVMirror: assista JAV no Stremio e Nuvio.">
-  <title>AVMirror — Assistir JAV no Stremio e Nuvio</title>
+  <meta name="description" content="AVMirror 26.1: addon para Stremio e provider direto para Nuvio.">
+  <title>AVMirror 26.1 — Stremio e Nuvio</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{avpink:'#ff5398',avred:'#dc2626'}}}}</script>
+  <script>tailwind.config={theme:{extend:{colors:{avpink:'#ff5398'}}}}</script>
   <style>
-    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}body{background:#0a0a0a;color:#f5f5f5}.grid-bg{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:32px 32px}.pink-glow{box-shadow:0 0 80px rgba(255,83,152,.12)}.manifest{word-break:break-all}.copy-btn{transition:all .2s}.copy-btn:hover{background:#ff5398;color:#000}.copy-btn:active{transform:scale(.97)}
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}body{background:#0a0a0a;color:#f5f5f5}.grid-bg{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:32px 32px}.glow{box-shadow:0 0 80px rgba(255,83,152,.12)}.wrap{word-break:break-all}.copy-btn{transition:all .2s}.copy-btn:hover{background:#ff5398;color:#000}
   </style>
 </head>
 <body class="min-h-screen grid-bg">
   <header class="border-b border-white/10 bg-black/70">
-    <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
-      <a href="/install" class="flex items-center gap-3 font-bold tracking-tight"><img src="/logo.png" alt="Logo AVMirror" class="h-9 w-9 rounded object-cover" width="36" height="36"><span>AVMirror</span></a>
-      <span class="text-sm text-gray-400">Versão 26.1</span>
-    </div>
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-5"><a href="/install" class="flex items-center gap-3 font-bold"><img src="/logo.png" alt="Logo AVMirror" class="h-9 w-9 rounded object-cover" width="36" height="36"><span>AVMirror</span></a><span class="rounded bg-white/10 px-3 py-1 text-sm text-gray-300">26.1.0</span></div>
   </header>
-  <main class="mx-auto max-w-5xl px-5">
-    <section class="py-20 text-center sm:py-28">
-      <p class="mb-5 text-xs font-bold uppercase tracking-[.28em] text-avpink">Addon para Stremio e Nuvio · versão 26.1</p>
-      <h1 class="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl">AVMirror</h1>
-      <h2 class="mx-auto mt-4 max-w-3xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Assista <span class="text-avpink">JAV</span> no Stremio e Nuvio.</h2>
-      <p class="mx-auto mt-6 max-w-xl text-base leading-7 text-gray-400">Tenha seu catálogo, pesquisa, metadados e reprodução organizados em uma experiência integrada.</p>
-      <div class="mt-9 flex flex-wrap justify-center gap-3">
-        <a id="install" href="#" class="rounded bg-avpink px-6 py-3 font-bold text-black shadow-[0_0_30px_rgba(255,83,152,.25)] transition hover:bg-white">Instalar no Stremio</a>
-        <a href="#manifesto" class="rounded border border-white/20 px-6 py-3 font-bold text-white transition hover:border-avpink hover:text-avpink">Instalação manual</a>
-      </div>
-    </section>
-    <section id="apoie" class="mx-auto mb-6 max-w-2xl rounded border border-avpink/30 bg-black/60 p-6 pink-glow sm:p-8">
-      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-avpink">Apoie o projeto</p><h2 class="mt-2 text-xl font-bold">Apoie o AVMirror</h2></div><span class="rounded bg-avpink/10 px-2 py-1 text-xs text-avpink">Em breve</span></div>
-      <p class="mt-3 text-sm text-gray-400">Se o addon é útil para você, considere apoiar sua manutenção e continuidade. Em breve, disponibilizaremos as opções de doação.</p>
-      <button id="donate" type="button" disabled class="mt-5 w-full cursor-not-allowed rounded border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-gray-500">Link de doação em breve</button>
-    </section>
-    <section id="downloads" class="mx-auto mb-6 max-w-5xl rounded border border-white/10 bg-black/60 p-6 pink-glow sm:p-8">
-      <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-avpink">Downloads</p><h2 class="mt-2 text-xl font-bold">Instale o servidor local</h2></div><span class="rounded bg-white/10 px-2 py-1 text-xs text-gray-400">26.1.0</span></div>
-      <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-400">Baixe a versão correspondente ao seu dispositivo. Windows e Ubuntu/Debian incluem o runtime e o navegador headless necessários para executar o servidor em segundo plano.</p>
-      <div class="mt-6 grid gap-4 md:grid-cols-3">
-        <a class="download-card rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink hover:bg-avpink/5" data-download="windows" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-windows_26.1.0.zip">
-          <p class="text-base font-bold text-white">Windows</p><p class="mt-2 text-xs leading-5 text-gray-400">Bundle ZIP x64 com executável, Chromium e instalador PowerShell.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar Windows</span>
-        </a>
-        <a class="download-card rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink hover:bg-avpink/5" data-download="linux" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-linux_26.1.0_amd64.deb">
-          <p class="text-base font-bold text-white">Ubuntu / Debian</p><p class="mt-2 text-xs leading-5 text-gray-400">Pacote DEB x64 com Node.js, dependências e Chromium Headless Shell.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar DEB</span>
-        </a>
-        <a class="download-card rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink hover:bg-avpink/5" data-download="android" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-android_26.1.0.apk">
-          <p class="text-base font-bold text-white">Android</p><p class="mt-2 text-xs leading-5 text-gray-400">APK com WebView/Chromium oculto e serviço foreground.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar APK</span>
-        </a>
-      </div>
-      <p id="download-note" class="mt-4 text-xs text-gray-500">Os downloads são publicados nas Releases oficiais do GitHub.</p>
-    </section>
-    <section id="manifesto" class="mx-auto mb-20 max-w-2xl rounded border border-white/10 bg-black/60 p-6 pink-glow sm:p-8">
-      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-gray-500">Manifesto</p><h2 class="mt-2 text-xl font-bold">Instalação manual</h2></div><span class="rounded bg-white/10 px-2 py-1 text-xs text-gray-400">26.1</span></div>
-      <p class="mt-3 text-sm text-gray-400">Para o Stremio, use o manifesto abaixo. No Nuvio, adicione o provider direto, que executa a resolução no próprio dispositivo sem Render.</p>
-      <div class="mt-5 flex items-center gap-2 rounded border border-white/10 bg-[#111] p-2"><code id="manifest-url" class="manifest min-w-0 flex-1 px-2 text-xs text-gray-300"></code><button id="copy" type="button" class="copy-btn shrink-0 rounded bg-white/10 px-3 py-2 text-xs font-bold text-white">Copiar</button></div>
-      <div class="mt-5 rounded border border-avpink/30 bg-avpink/5 p-4"><p class="text-sm font-bold text-white">Provider Nuvio direto</p><code class="manifest mt-2 block text-xs text-gray-300">https://raw.githubusercontent.com/devavmirror/avmirror/main/nuvio/manifest.json</code><p class="mt-2 text-xs leading-5 text-gray-500">Nuvio → Configurações → Plugins → adicionar repositório/manifesto.</p></div>
-      <p id="copied" class="mt-3 min-h-5 text-xs text-avpink" aria-live="polite"></p>
-    </section>
-    <section id="stremio-preview" class="mx-auto mb-20 max-w-5xl">
-      <div class="mb-8 text-center"><p class="text-xs font-bold uppercase tracking-[.28em] text-avpink">Veja no Stremio</p><h2 class="mt-2 text-2xl font-bold text-white sm:text-3xl">Nosso addon, dentro do seu player</h2><p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-gray-400">Confira como o AVMirror aparece no Stremio e como o catálogo fica organizado após a instalação.</p></div>
-      <div class="grid gap-6 lg:grid-cols-2">
-        <figure class="overflow-hidden rounded border border-white/10 bg-black/60 pink-glow">
-          <img src="/stremio-addons-installed.webp" alt="AVMirror aparecendo sozinho na lista filtrada de addons do Stremio" loading="lazy" class="block h-auto w-full">
-          <figcaption class="border-t border-white/10 px-5 py-4 text-sm text-gray-400"><strong class="text-white">Addon instalado</strong><br>O AVMirror identificado no Stremio com a versão 26.1.0.</figcaption>
-        </figure>
-        <figure class="overflow-hidden rounded border border-white/10 bg-black/60 pink-glow">
-          <img src="/stremio-avmirror-catalog.webp" alt="Catálogo AVMirror carregado no Stremio com pôsteres e painel de detalhes" loading="lazy" class="block h-auto w-full">
-          <figcaption class="border-t border-white/10 px-5 py-4 text-sm text-gray-400"><strong class="text-white">Catálogo carregado</strong><br>Cards, pôsteres, filtros e detalhes do catálogo AVMirror.</figcaption>
-        </figure>
-      </div>
-    </section>
-    <section class="grid gap-4 border-t border-white/10 py-8 text-sm text-gray-400 sm:grid-cols-3"><div><strong class="text-white">Catálogo</strong><p class="mt-1">Novidades, populares, pesquisa e categorias.</p></div><div><strong class="text-white">Experiência integrada</strong><p class="mt-1">Conteúdo organizado no player compatível.</p></div><div><strong class="text-white">Atualização</strong><p class="mt-1"><span class="text-avpink">26.1</span> · versão atual do addon.</p></div></section>
-    <section class="border-t border-white/10 py-8 text-center text-xs leading-6 text-gray-500"><p>O addon é independente para Stremio e Nuvio. Use apenas fontes e conteúdos para os quais você possui autorização.</p><p class="mt-2"><a id="manifest-link" href="#" class="text-gray-300 hover:text-avpink">Manifesto</a></p></section>
+  <main class="mx-auto max-w-6xl px-5">
+    <section class="py-20 text-center sm:py-28"><p class="mb-5 text-xs font-bold uppercase tracking-[.28em] text-avpink">Addon Stremio · Provider Nuvio · 26.1</p><h1 class="text-5xl font-extrabold tracking-tight text-white sm:text-7xl">AVMirror</h1><p class="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-400">Catálogo e resolução de streams com reprodução direta por padrão. Sem Render obrigatório e com proxy local opcional para fontes que realmente precisam dele.</p><div class="mt-9 flex flex-wrap justify-center gap-3"><a id="install" href="#" class="rounded bg-avpink px-6 py-3 font-bold text-black transition hover:bg-white">Instalar no Stremio</a><a href="#nuvio" class="rounded border border-white/20 px-6 py-3 font-bold transition hover:border-avpink hover:text-avpink">Configurar Nuvio</a></div></section>
+
+    <section class="grid gap-4 md:grid-cols-3"><div class="rounded border border-white/10 bg-black/60 p-6 glow"><p class="text-xs font-bold uppercase tracking-widest text-avpink">Stremio</p><h2 class="mt-2 text-xl font-bold">Modo direto</h2><p class="mt-3 text-sm leading-6 text-gray-400">O addon entrega a URL original e os headers necessários. O vídeo não precisa passar pelo Render.</p></div><div class="rounded border border-white/10 bg-black/60 p-6 glow"><p class="text-xs font-bold uppercase tracking-widest text-avpink">Nuvio</p><h2 class="mt-2 text-xl font-bold">Resolução no aparelho</h2><p class="mt-3 text-sm leading-6 text-gray-400">O provider JavaScript usa o dispositivo do usuário para consultar e resolver fontes compatíveis.</p></div><div class="rounded border border-white/10 bg-black/60 p-6 glow"><p class="text-xs font-bold uppercase tracking-widest text-avpink">Opcional</p><h2 class="mt-2 text-xl font-bold">Proxy local</h2><p class="mt-3 text-sm leading-6 text-gray-400">Instale o servidor local somente quando uma fonte exigir reescrita HLS, cookies ou headers especiais.</p></div></section>
+
+    <section id="nuvio" class="mt-6 rounded border border-avpink/30 bg-black/60 p-6 glow sm:p-8"><p class="text-xs font-bold uppercase tracking-widest text-avpink">Android · Nuvio</p><h2 class="mt-2 text-2xl font-bold">Provider direto, sem servidor central</h2><p class="mt-3 max-w-3xl text-sm leading-6 text-gray-400">No Nuvio, adicione o manifesto abaixo em <strong class="text-white">Configurações → Plugins</strong>. O provider não depende do Render ou de um proxy remoto; o player acessa diretamente a fonte quando ela permite.</p><div class="mt-5 rounded border border-white/10 bg-[#111] p-4"><code class="wrap block text-xs text-gray-300">https://raw.githubusercontent.com/devavmirror/avmirror/main/nuvio/manifest.json</code></div><a class="mt-5 inline-block rounded bg-avpink px-5 py-3 text-sm font-bold text-black transition hover:bg-white" href="https://raw.githubusercontent.com/devavmirror/avmirror/main/nuvio/manifest.json">Abrir manifesto Nuvio</a><p class="mt-4 text-xs leading-5 text-gray-500">Fontes que exigem navegador completo ou proxy HLS contínuo podem não funcionar no provider direto.</p></section>
+
+    <section id="stremio" class="mt-6 rounded border border-white/10 bg-black/60 p-6 glow sm:p-8"><p class="text-xs font-bold uppercase tracking-widest text-avpink">Stremio</p><h2 class="mt-2 text-2xl font-bold">Instalar o addon</h2><p class="mt-3 text-sm leading-6 text-gray-400">Use o botão automático ou copie o manifesto. O endereço é calculado com base no host em que esta página foi aberta, o que evita links fixos incorretos em uma rede local.</p><div class="mt-5 flex items-center gap-2 rounded border border-white/10 bg-[#111] p-2"><code id="manifest-url" class="wrap min-w-0 flex-1 px-2 text-xs text-gray-300"></code><button id="copy" type="button" class="copy-btn shrink-0 rounded bg-white/10 px-3 py-2 text-xs font-bold">Copiar</button></div><p id="copied" class="mt-3 min-h-5 text-xs text-avpink" aria-live="polite"></p></section>
+
+    <section id="downloads" class="mt-6 rounded border border-white/10 bg-black/60 p-6 glow sm:p-8"><p class="text-xs font-bold uppercase tracking-widest text-avpink">Servidor local opcional</p><h2 class="mt-2 text-2xl font-bold">Quando usar os bundles</h2><p class="mt-3 text-sm leading-6 text-gray-400">Use Windows ou Ubuntu/Debian somente para fontes que não reproduzem no modo direto. Os bundles incluem o runtime e os componentes necessários ao servidor local.</p><div class="mt-6 grid gap-4 md:grid-cols-2"><a class="rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-windows_26.1.0.zip"><h3 class="font-bold">Windows</h3><p class="mt-2 text-xs leading-5 text-gray-400">Bundle x64 com executável, Chromium e instalador PowerShell.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar Windows</span></a><a class="rounded border border-white/10 bg-[#111] p-5 transition hover:border-avpink" href="https://github.com/devavmirror/avmirror/releases/latest/download/avmirror-linux_26.1.0_amd64.deb"><h3 class="font-bold">Ubuntu / Debian</h3><p class="mt-2 text-xs leading-5 text-gray-400">Pacote DEB x64 com runtime e Chromium Headless Shell.</p><span class="mt-4 inline-block rounded bg-avpink px-4 py-2 text-xs font-bold text-black">Baixar DEB</span></a></div><p class="mt-5 text-xs leading-5 text-gray-500">Depois de iniciar o servidor, abra esta página pelo IP do computador. Para ativar o proxy: <code>USE_LOCAL_HLS_PROXY=true</code>.</p></section>
+
+    <section class="mt-6 rounded border border-white/10 bg-black/60 p-6 sm:p-8"><h2 class="text-2xl font-bold">Fluxo de reprodução</h2><div class="mt-5 grid gap-4 text-sm md:grid-cols-3"><div><p class="font-bold text-avpink">1. Catálogo</p><p class="mt-2 text-gray-400">O cliente consulta o catálogo e os metadados disponíveis.</p></div><div><p class="font-bold text-avpink">2. Resolução</p><p class="mt-2 text-gray-400">O provider tenta obter um link direto e envia os headers necessários.</p></div><div><p class="font-bold text-avpink">3. Reprodução</p><p class="mt-2 text-gray-400">O player baixa o vídeo da fonte. O proxy local só entra quando habilitado.</p></div></div></section>
+
+    <footer class="border-t border-white/10 py-10 text-center text-xs leading-6 text-gray-500"><p>AVMirror 26.1.0 · Use somente fontes e conteúdos para os quais você possui autorização.</p><p class="mt-2"><a id="manifest-link" href="#" class="text-gray-300 hover:text-avpink">Manifesto Stremio</a> · <a href="https://github.com/devavmirror/avmirror" class="text-gray-300 hover:text-avpink">Código-fonte</a></p></footer>
   </main>
   <script>
-    const manifestNode=document.getElementById('manifest-url');
-    const installButton=document.getElementById('install');
-    const copyButton=document.getElementById('copy');
-    const copiedNode=document.getElementById('copied');
-    let manifest=location.origin+'/manifest.json';
-    function applyServer(baseUrl){
-      manifest=baseUrl.replace(/\/$/,'')+'/manifest.json';
-      manifestNode.textContent=manifest;
-      document.getElementById('manifest-link').href=manifest;
-      installButton.href='stremio://'+new URL(baseUrl).host+'/manifest.json';
-    }
-    applyServer(location.origin);
-    fetch('/api/local-info',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(info=>{if(info&&info.baseUrl)applyServer(info.baseUrl)}).catch(()=>{});
-    installButton.addEventListener('click',async event=>{
-      event.preventDefault();
-      const original=installButton.textContent;
-      installButton.textContent='Verificando servidor...';
-      try{
-        const response=await fetch('/health',{cache:'no-store'});
-        if(!response.ok)throw new Error('health');
-        location.href=installButton.href;
-      }catch{
-        copiedNode.textContent='Servidor indisponível. Abra esta página pelo endereço do computador que executa o AVMirror.';
-      }finally{installButton.textContent=original}
-    });
+    const manifestNode=document.getElementById('manifest-url');const installButton=document.getElementById('install');const copyButton=document.getElementById('copy');const copiedNode=document.getElementById('copied');let manifest='';
+    function applyServer(baseUrl){const clean=baseUrl.replace(/\/$/,'');manifest=clean+'/manifest.json';manifestNode.textContent=manifest;document.getElementById('manifest-link').href=manifest;installButton.href='stremio://'+new URL(clean).host+'/manifest.json'}
+    applyServer(location.origin);fetch('/api/local-info',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(info=>{if(info&&info.baseUrl)applyServer(info.baseUrl)}).catch(()=>{});
+    installButton.addEventListener('click',async e=>{e.preventDefault();const old=installButton.textContent;installButton.textContent='Verificando...';try{const r=await fetch('/health',{cache:'no-store'});if(!r.ok)throw Error('health');location.href=installButton.href}catch{copiedNode.textContent='Servidor indisponível. Abra esta página pelo endereço do computador que executa o AVMirror.'}finally{installButton.textContent=old}});
     copyButton.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(manifest);copiedNode.textContent='Manifesto copiado.'}catch{copiedNode.textContent='Copie o endereço manualmente.'}});
   </script>
 </body>

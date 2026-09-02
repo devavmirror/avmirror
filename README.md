@@ -1,32 +1,68 @@
-# Assistir JAV no Stremio e Nuvio
+# AVMirror 26.1
 
-Addon independente para **Stremio** e **Nuvio**, desenvolvido para organizar catálogos e disponibilizar uma experiência de reprodução integrada para conteúdos que o usuário esteja autorizado a acessar.
+Addon para **Stremio** e provider direto para **Nuvio**. O projeto organiza catálogos, metadados e fontes de reprodução para conteúdos que o usuário está autorizado a acessar.
 
-> **Versão atual: 26.1**
+> **Versão atual: 26.1.0**
 
 ## Visão geral
 
-O projeto disponibiliza um serviço HTTP compatível com o ecossistema de addons do Stremio. A instalação é feita por meio de um manifesto público, enquanto a aplicação mantém a lógica de catálogo, metadados, capas e reprodução concentrada no servidor.
+O AVMirror possui dois modos de uso. No **modo direto**, Stremio ou Nuvio recebem a URL original da fonte e o player faz a reprodução diretamente no dispositivo. No **modo proxy local**, um servidor opcional executado pelo usuário reescreve playlists HLS e encaminha segmentos quando a fonte exige headers, cookies ou URLs relativas.
 
-A página de instalação foi projetada para exibir somente as informações necessárias ao usuário final. Detalhes operacionais, credenciais, tokens, endereços internos e regras específicas de integração não são apresentados na interface pública.
+O Render não é requisito do modo direto. O projeto também não depende de um banco de dados central para a resolução básica. O código do provider Nuvio pode ser hospedado em um fork ou espelho Git compatível com o formato aceito pelo aplicativo.
 
-## Principais recursos
+## Plataformas e recursos
 
-| Recurso | Descrição |
-| --- | --- |
-| Instalação direta | Gera um link compatível com a instalação do addon no Stremio. |
-| Instalação manual | Exibe o endereço do manifesto para cópia e inclusão em aplicativos compatíveis. |
-| Apoio ao projeto | Exibe uma ação informativa nas páginas de detalhes e um destaque na página de instalação; o link de doação será configurado posteriormente. |
-| Catálogo e pesquisa | Oferece navegação por catálogos e suporte a pesquisa conforme a disponibilidade das fontes autorizadas. |
-| Metadados e capas | Normaliza informações de título, descrição, categorias e imagens para o cliente. |
-| Reprodução integrada | Retorna streams compatíveis com o player do aplicativo, sem expor detalhes de implementação na página pública. |
-| Proteções de acesso | Valida hosts, protocolos e formatos permitidos antes de encaminhar recursos. |
+| Plataforma | Componente | Comportamento padrão | Proxy HLS local |
+| --- | --- | --- | --- |
+| Android | Provider Nuvio | Resolução direta no aparelho | Não aplicável ao plugin sozinho |
+| Windows/Linux | Addon Stremio | URLs diretas da fonte | Opcional |
+| Windows/Linux | Servidor AVMirror | Catálogo, metadados e resolução | Ativável por variável |
 
-## Requisitos
+O provider Nuvio foi construído sem Express, Playwright, filesystem ou módulos nativos do Node. Ele usa `fetch`, Promises e IDs próprios das fontes. Fontes que exigem navegador completo ou reescrita contínua de segmentos podem permanecer disponíveis somente no servidor Stremio com proxy local.
 
-Para executar o projeto localmente, é necessário ter **Node.js 20 ou superior**, npm e, quando a resolução dinâmica estiver habilitada, o navegador Chromium gerenciado pelo Playwright. Para implantação conteinerizada, o projeto inclui um `Dockerfile` preparado para o ambiente de execução.
+## Instalação rápida
 
-No Ubuntu, também é possível usar o Chromium do sistema, sem baixar o navegador do Playwright:
+### Stremio remoto ou modo direto
+
+Use o manifesto público do serviço que hospeda o addon:
+
+```text
+https://SEU-ENDERECO/manifest.json
+```
+
+O manifesto também pode ser obtido na página `/install`.
+
+### Nuvio
+
+No Nuvio, abra **Configurações → Plugins** e adicione:
+
+```text
+https://raw.githubusercontent.com/devavmirror/avmirror/main/nuvio/manifest.json
+```
+
+O arquivo do provider está em `nuvio/providers/avmirror.js`. O Nuvio executa a resolução no próprio aparelho e devolve ao player uma URL direta, sem retransmissão pelo Render.
+
+### Servidor local opcional
+
+O servidor local é indicado quando uma fonte não reproduz diretamente no player:
+
+```bash
+npm install
+npx playwright install chromium
+npm run start:local
+```
+
+Acesse `http://IP-DO-COMPUTADOR:7000/install` no dispositivo cliente. Para usar o proxy HLS local explicitamente:
+
+```bash
+LOCAL_MODE=true USE_LOCAL_HLS_PROXY=true BIND_HOST=0.0.0.0 PORT=7000 node server.js
+```
+
+Sem `USE_LOCAL_HLS_PROXY=true`, o servidor local retorna streams diretos por padrão.
+
+## Requisitos locais
+
+O servidor requer Node.js 20 ou superior e npm. A resolução que usa navegador requer Chromium compatível com Playwright. No Ubuntu, o Chromium do sistema também pode ser usado:
 
 ```bash
 sudo apt update
@@ -35,175 +71,87 @@ unset PLAYWRIGHT_EXECUTABLE_PATH
 npm run start:local
 ```
 
-O código detecta automaticamente `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`, `/usr/bin/google-chrome-stable` e `/snap/bin/chromium`. Se `PLAYWRIGHT_EXECUTABLE_PATH` estiver definido para um caminho inexistente, ele emite um aviso e usa o primeiro executável disponível.
-
-## Execução local
-
-```bash
-npm install
-npx playwright install chromium
-npm run start:local
-```
-
-No modo local, o servidor escuta em `0.0.0.0:7000`. O Stremio recebe URLs HLS do computador servidor (`http://IP-LAN:7000/hls?...`) e o dispositivo faz o proxy da playlist e dos segmentos diretamente para o player. O tráfego de vídeo não passa pelo Render. Use sempre `npm run start:local` (ou defina `LOCAL_MODE=true BIND_HOST=0.0.0.0`) para ativar os proxies locais de capas, playlists e segmentos. Se a máquina tiver várias interfaces de rede, defina `LAN_HOST=192.168.x.x` para anunciar o endereço correto.
-
-Por padrão, o serviço escuta na porta `7000`. Para iniciar em modo de desenvolvimento com reinicialização automática, utilize:
-
-```bash
-npm run dev
-```
-
-Depois de iniciar em modo local, abra `http://IP-LAN:7000/` no dispositivo cliente e use o botão de instalação, ou instale manualmente usando `http://IP-LAN:7000/manifest.json`. Os principais endereços são:
-
-| Endpoint | Finalidade |
-| --- | --- |
-| `http://localhost:7000/install` | Página pública de instalação. |
-| `http://localhost:7000/manifest.json` | Manifesto do addon. |
-| `http://localhost:7000/health` | Verificação de disponibilidade do serviço. |
-
-## Configuração por ambiente
-
-A aplicação aceita configurações por variáveis de ambiente. Em produção, defina os valores no painel do provedor de hospedagem ou no mecanismo de secrets utilizado pela sua infraestrutura; não grave credenciais diretamente no código ou no repositório.
+## Configuração principal
 
 | Variável | Finalidade | Padrão |
 | --- | --- | --- |
-| `PORT` | Porta HTTP do serviço. | `7000` |
-| `PUBLIC_BASE_URL` | URL pública usada para montar links do manifesto e dos recursos proxificados. | Detectada pelo ambiente de hospedagem |
-| `BASE_URL` | Fonte primária configurável para o catálogo. | Definida pelo servidor |
-| `RENDER_EXTERNAL_URL` | URL pública fornecida automaticamente pelo Render. | Opcional |
-| `RENDER_EXTERNAL_HOSTNAME` | Host público fornecido automaticamente pelo Render. | Opcional |
-| `IMAGE_TIMEOUT_MS` | Tempo limite das requisições de imagens. | `12000` |
-| `IMAGE_MAX_BYTES` | Tamanho máximo aceito por imagem proxificada. | `4194304` |
-| `IMAGE_CACHE_MAX_ENTRIES` | Quantidade máxima de imagens mantidas em memória. | `120` |
-| `IMAGE_CACHE_MAX_BYTES` | Tamanho total máximo do cache de imagens em memória. | `50331648` |
-| `MEDIA_TIMEOUT_MS` | Tempo limite das requisições do proxy local de playlists e segmentos. | `30000` |
-| `CACHE_MAX_ENTRIES` | Quantidade máxima de respostas de scraping mantidas em memória. | `500` |
-| `ENABLE_BROWSER_STREAMS` | Permite habilitar resolução dinâmica quando necessária. | Desabilitada por padrão |
-| `LOCAL_MODE` | Ativa os proxies locais de imagens e HLS. | `false` |
-| `BIND_HOST` | Interface de escuta HTTP. | `0.0.0.0` |
-| `LAN_HOST` | IP anunciado nos links locais quando há várias interfaces. | Detectado automaticamente |
-| `VIDEO_PROXY` | Legado; não habilita proxy no Render. | Desativado remotamente |
+| `PORT` | Porta HTTP do servidor | `7000` |
+| `BIND_HOST` | Interface de escuta | `0.0.0.0` |
+| `LAN_HOST` | IP anunciado nos links LAN | Automático |
+| `PUBLIC_BASE_URL` | Origem pública do addon | Detectada pelo ambiente |
+| `BASE_URL` | Fonte primária do catálogo | Configurada pelo servidor |
+| `LOCAL_MODE` | Habilita recursos locais | `false` |
+| `USE_LOCAL_HLS_PROXY` | Ativa o proxy HLS local | `false` |
+| `ENABLE_BROWSER_STREAMS` | Permite resolução com navegador | Conforme ambiente |
+| `PLAYWRIGHT_EXECUTABLE_PATH` | Caminho opcional do Chromium | Automático |
 
-Os valores reais de produção devem permanecer fora do controle de versão. O arquivo `.env` não deve ser publicado, e qualquer token temporário deve ser tratado como segredo operacional.
+Não coloque tokens, cookies, senhas ou URLs privadas no repositório. Use variáveis de ambiente e armazenamento seguro.
 
-## Reprodução de vídeo
+## Endpoints
 
-Em implantação no Render, o AVMirror não retransmite vídeo: os handlers preservam as URLs HTTPS originais e `/hls` responde `410 Gone`. Em execução local com `LOCAL_MODE=true`, o servidor do próprio dispositivo pode fazer o proxy HLS para resolver playlists, segmentos e cabeçalhos exigidos pela fonte. Nesse caso, o tráfego de vídeo permanece entre a fonte, o dispositivo e o Stremio; o Render não participa da reprodução.
+| Endpoint | Finalidade |
+| --- | --- |
+| `/install` | Página de instalação e downloads |
+| `/manifest.json` | Manifesto do addon Stremio |
+| `/health` | Verificação de saúde |
+| `/api/local-info` | Informações e links da rede local |
+| `/hls` | Proxy HLS somente quando o modo local estiver ativado |
 
-## Docker
+## Builds de distribuição
 
-Para construir e executar a imagem localmente:
+Os scripts de distribuição são:
 
 ```bash
-docker build -t assistir-jav-stremio-nuvio .
-docker run --rm -p 7000:7000 assistir-jav-stremio-nuvio
+npm run build:win
+npm run build:deb
+npm run build:apk
 ```
 
-A imagem fixa as dependências necessárias para manter a compatibilidade entre o Playwright e o Chromium. Em ambientes com restrições de recursos, recomenda-se validar a inicialização do navegador e acompanhar os logs do serviço durante o primeiro deploy.
-
-## Implantação no Render
-
-O repositório contém `render.yaml` e `Dockerfile`. No Render, crie um serviço a partir do Blueprint do repositório e configure as variáveis públicas e secretas no painel da plataforma. Após a implantação, valide a saúde do serviço acessando `/health` e confirme a instalação por `/install`.
-
-A URL final deve ser usada apenas depois que o serviço estiver disponível. O manifesto estará no caminho `/manifest.json` da mesma origem pública.
+O bundle Windows inclui o executável e o navegador distribuído pelo processo de build. O pacote Debian inclui o runtime e o Chromium Headless Shell quando os artefatos necessários estiverem disponíveis. O módulo Android legado não hospeda o servidor Node; para Android, a rota recomendada é o Nuvio com o provider direto.
 
 ## Testes
 
-Execute a suíte automatizada com:
+Execute:
 
 ```bash
 npm test
-```
-
-Antes de abrir uma alteração, verifique também a sintaxe dos arquivos JavaScript e confirme que nenhum segredo, token real, cookie, senha ou credencial foi incluído no diff:
-
-```bash
 node --check server.js
 node --check scraper.js
+node --check javrider.js
+node --check nuvio/providers/avmirror.js
 git diff --check
-git diff -- . ':!package-lock.json'
 ```
 
-## Segurança e uso autorizado
-
-O addon não deve ser utilizado para acessar, redistribuir ou retransmitir material sem autorização. As fontes configuradas precisam ser legítimas e compatíveis com os direitos de uso do operador e do usuário.
-
-Não inclua chaves, tokens, cookies de sessão, credenciais ou URLs privadas em arquivos versionados, logs ou capturas de tela. Use variáveis de ambiente e o armazenamento seguro disponibilizado pelo provedor de hospedagem. Caso uma fonte exija autenticação ou imponha restrições de acesso, interrompa a integração em vez de tentar contorná-las.
+Os testes automatizados verificam IDs, catálogo, metadados, resolução de streams, filtros de publicidade, validações de URL e comportamentos do proxy.
 
 ## Estrutura do projeto
 
 | Caminho | Responsabilidade |
 | --- | --- |
-| `server.js` | Inicialização do servidor, manifesto, endpoints e validações. |
-| `scraper.js` | Catálogo, metadados e resolução da fonte principal. |
-| `av01.js` | Integração de catálogo e metadados da fonte correspondente. |
-| `javrider.js` | Integração de catálogo e metadados da fonte correspondente. |
-| `public/install.html` | Interface pública de instalação, sem informações operacionais sensíveis, com destaque de apoio ao projeto. |
-| `test/` | Testes automatizados das integrações e transformações. |
-| `Dockerfile` | Imagem de execução para implantação. |
-| `render.yaml` | Configuração declarativa do serviço no Render. |
+| `server.js` | Addon Stremio, endpoints, validações e proxy opcional |
+| `scraper.js` | Catálogo, metadados e resolução da fonte principal |
+| `av01.js` | Integração direta com a fonte AV01 |
+| `javrider.js` | Integração com a fonte JavRider |
+| `nuvio/manifest.json` | Registro do provider Nuvio |
+| `nuvio/providers/avmirror.js` | Provider Nuvio sem backend obrigatório |
+| `public/install.html` | Página pública de instalação |
+| `scripts/` | Inicialização, builds e empacotamento |
+| `test/` | Testes automatizados |
 
-## Licença e responsabilidade
+## Arquitetura de atualização
 
-Este repositório é fornecido conforme os termos definidos pelo mantenedor. O operador é responsável por configurar fontes autorizadas, proteger variáveis de ambiente e cumprir a legislação aplicável, os termos de uso dos serviços integrados e os direitos dos titulares do conteúdo.
+O addon Stremio pode ser atualizado no servidor que o operador escolher. O provider Nuvio é carregado a partir do manifesto e pode ser distribuído por GitHub ou por um fork mantido pelo usuário. Isso evita que a reprodução direta dependa do Render. A disponibilidade das fontes externas continua sujeita às alterações, políticas e direitos de acesso de cada fonte.
 
-**Versão do projeto: 26.1**
+## Uso responsável
 
+Use o projeto somente com fontes, mídias e integrações para as quais você possui autorização. Não tente contornar autenticação, paywalls, bloqueios ou restrições de acesso. O operador deve respeitar a legislação aplicável, os termos dos serviços integrados e os direitos dos titulares do conteúdo.
 
-## Distribuição local multiplataforma
+## Licença
 
-A execução local agora escuta em `0.0.0.0:7000` por padrão, permitindo que celulares, Smart TVs e outros computadores da mesma rede acessem `http://IP-DO-PC:7000/`. A página raiz detecta o host acessado e gera automaticamente o link `stremio://IP-DO-PC:7000/manifest.json`. Use `/api/local-info` para obter os links em JSON.
+Consulte o arquivo `LICENSE` para os termos aplicáveis ao código do projeto.
 
-### Windows: instalação automatizada
+## Referências
 
-Os instaladores de usuário final não fazem `git clone`: baixam o bundle publicado em uma Release, que inclui o executável e o Chromium Playwright necessário.
-
-Abra o PowerShell como Administrador na pasta do projeto e execute:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-$env:AVMIRROR_WINDOWS_URL = 'https://HOST/RELEASES/avmirror-windows_26.1.0.zip'
-.\scripts\windows\install.ps1
-```
-
-O instalador copia o aplicativo para `%LocalAppData%\avmirror-addon`, cria a regra de firewall TCP 7000 apenas para o perfil Private, registra o autostart em `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` e inicia o servidor. O pacote portátil pode ser gerado com `npm run build:win`; ele produz `dist/win-x64/avmirror-windows_26.1.0.exe` e uma cópia do instalador.
-
-### Debian/Ubuntu: pacote `.deb`
-
-O instalador remoto também não acessa o código-fonte:
-
-```bash
-curl -sSL https://HOST/RELEASES/install.sh | AVMIRROR_LINUX_URL=https://HOST/RELEASES/avmirror-linux_26.1.0_amd64.deb bash
-```
-
-Com Node.js 20+ e as dependências instaladas, execute:
-
-```bash
-npm install
-npm run build:deb
-sudo apt install ./dist/avmirror-linux_26.1.0_amd64.deb
-systemctl status avmirror.service
-```
-
-O pacote instala o servidor, o runtime Node.js e o Chromium Playwright Headless Shell em `/opt/avmirror`, além do comando `/usr/bin/avmirror-local` e `avmirror.service`, habilitado no boot e configurado para `BIND_HOST=0.0.0.0`, `PORT=7000`. A porta deve ser liberada no firewall local, se o UFW estiver ativo: `sudo ufw allow 7000/tcp`.
-
-### Android / TV Box
-
-O diretório `android/` contém um projeto Gradle com Activity nativa, WebView oculto e Foreground Service com notificação persistente. A versão atual do APK valida o WebView e a resolução de páginas; ela ainda não hospeda o servidor Node no Android. Gere o APK de debug com:
-
-```bash
-npm install
-npm run build:apk
-```
-
-São necessários Android SDK 35, JDK 17 e Gradle 8.9+. Em Android 13 ou superior, permita notificações e desative a otimização de bateria para o AVMirror quando o fabricante oferecer essa opção.
-
-### Servidor central da casa
-
-Para usar um PC como servidor central, conecte PC, celular e Smart TV à mesma rede, inicie o AVMirror no PC e abra `http://IP-DO-PC:7000/` no dispositivo cliente. Pressione **Instalar no Stremio** ou copie o manifesto manualmente. O PC precisa permanecer ligado; a página `/health` confirma a disponibilidade. Não exponha a porta 7000 diretamente à Internet sem uma camada de autenticação e TLS.
-
-## Builds e proteção do código
-
-`npm run protect` aplica obfuscação e gera `.jsc` em `dist/protected`; `npm run protect:bytecode` mantém a conversão isolada. O empacotamento Windows usa `pkg` para um executável x64 autônomo; o pacote Debian inclui a aplicação e dependências. O uso de bytecode V8 deve ser tratado como **dissuasão contra inspeção casual, não como criptografia**: bytecode e executáveis podem ser analisados. Não são incluídos tokens, cookies, chaves privadas ou credenciais. Segredos devem ser fornecidos exclusivamente por variáveis de ambiente fora do Git.
-
-> Conteúdo e fontes devem ser usados somente quando o operador tiver autorização e direitos de acesso. O compartilhamento LAN deve permanecer restrito à rede confiável do usuário.
+[1]: https://www.stremio.com/ "Stremio"
+[2]: https://nuvio.tv/ "Nuvio"
+[3]: https://github.com/yoruix/nuvio-providers "Exemplos públicos de providers Nuvio"
