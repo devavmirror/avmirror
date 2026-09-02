@@ -73,7 +73,17 @@ test("JavRider tags map to clickable paginated tag routes", async () => {
 test("JavRider streams build the HLS master from subtitle CDN hash", async () => {
   const article = "https://javrider.com/sone-005-hls-title/";
   const id = `javrider:${Buffer.from(article).toString("base64url")}`;
-  global.fetch = async url => response('<script>var playerjsSubtitle = "[EN]https://trk6tu.akmicdn.com/cdn/down/68fc6bc32023b787bb75692a78549a93/Subtitle/test.srt";</script>');
+  const master = "https://javplayers.com/cdn/hls/68fc6bc32023b787bb75692a78549a93/master.txt";
+  const child = "https://javplayers.com/m3/valid";
+  const segment = "https://javplayers.com/m3/segment.ts";
+  global.fetch = async url => {
+    url = String(url);
+    if (url === article) return response('<script>var playerjsSubtitle = "[EN]https://trk6tu.akmicdn.com/cdn/down/68fc6bc32023b787bb75692a78549a93/Subtitle/test.srt";</script>');
+    if (url === master) return response(`#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100\n${child}`);
+    if (url === child) return response(`#EXTM3U\n#EXTINF:6,\n${segment}`);
+    if (url === segment) return response("video", 200, { "content-type": "video/mp2t" });
+    return response("<html></html>");
+  };
   try {
     const streams = await scrapeJavRiderStreams(id);
     assert.equal(streams.length, 1);

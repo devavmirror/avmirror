@@ -24,12 +24,12 @@ O servidor local é o modo principal para Stremio em Windows e Linux. Instale o 
 http://IP-DO-COMPUTADOR:7000/manifest.json
 ```
 
-O manifesto local aparece como **AVMirror Local** e usa o identificador técnico `com.avmirror.addon.local`. O proxy HLS é ativado por padrão no modo local para melhorar a compatibilidade com AV01, JavRider e playlists que exigem headers ou reescrita de URLs.
+O manifesto local aparece como **AVMirror Local** e usa o identificador técnico `com.avmirror.addon.local`. Streams diretos são usados por padrão; o proxy HLS local é somente um fallback explícito para fontes que exigem reescrita de playlist ou headers especiais.
 
-Para forçar streams diretos:
+Para ativar o fallback de proxy local:
 
 ```bash
-USE_LOCAL_HLS_PROXY=false
+USE_LOCAL_HLS_PROXY=true
 ```
 
 A página de configuração fica disponível em:

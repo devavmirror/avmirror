@@ -275,6 +275,26 @@ function isMediaUrl(u) {
   try { const parsed = new URL(u); if (BLOCKED_HOSTS.test(parsed.hostname) || AD_HOSTS.test(parsed.hostname) || AD_URL_PARTS.test(parsed.pathname + parsed.search)) return false; } catch { return false; }
   return /\.(m3u8|mp4|m4v|webm|mov|ts)(?:[?#].*)?$/i.test(u) || /(?:m3u8|mp4|manifest|playlist|videoplayback|master\.m3u|hls)/i.test(u);
 }
+async function isPlayableHls(url, referer = `${BASE_URL}/`) {
+  if (!/\.(?:m3u8|master\.txt)(?:[?#]|$)|\/cdn\/hls\//i.test(url)) return true;
+  try {
+    const playlistResponse = await fetch(url, { headers: { "user-agent": USER_AGENT, referer }, redirect: "follow" });
+    if (!playlistResponse.ok) return false;
+    const playlist = await playlistResponse.text();
+    if (!/^\s*#EXTM3U/m.test(playlist)) return false;
+    const child = playlist.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.startsWith("#"));
+    if (!child) return true;
+    const childResponse = await fetch(new URL(child, url), { headers: { "user-agent": USER_AGENT, referer }, redirect: "follow" });
+    if (!childResponse.ok) return false;
+    const childPlaylist = await childResponse.text();
+    if (!/^\s*#EXTM3U/m.test(childPlaylist)) return false;
+    const segment = childPlaylist.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.startsWith("#"));
+    if (!segment) return true;
+    const segmentResponse = await fetch(new URL(segment, new URL(child, url)), { headers: { "user-agent": USER_AGENT, referer }, redirect: "follow" });
+    const type = String(segmentResponse.headers.get("content-type") || "").toLowerCase();
+    return segmentResponse.ok && !/^(?:image\/|text\/|application\/json)/.test(type);
+  } catch { return false; }
+}
 function isUsefulPlayerUrl(u) {
   if (!u || !/^https?:/i.test(u)) return false;
   try {
@@ -443,8 +463,21 @@ function streamQuality(stream) {
   const match = value.match(/(?:^|[^0-9])(2160|1440|1080|720|576|540|480|360|240)\s*p?(?:[^0-9]|$)/i);
   return match ? `${match[1]}p` : "Auto";
 }
+function isDirectMediaUrl(raw) {
+  try {
+    const url = new URL(String(raw || ""));
+    if (!/^https?:$/i.test(url.protocol)) return false;
+    // Never publish a legacy Render/addon endpoint as the media URL. The
+    // player must contact the provider CDN directly whenever possible.
+    if (/^\/hls(?:\/|$)/i.test(url.pathname)) return false;
+    if (/(?:^|\.)onrender\.com$/i.test(url.hostname) || /(?:^|\.)render\.com$/i.test(url.hostname)) return false;
+    return isMediaUrl(url.href)
+      || /\.(?:m3u8|mp4|m4v|webm|m4s|ts)(?:[?#]|$)/i.test(url.pathname + url.search)
+      || /(?:master\.txt|\/manifest\/|\/playlist\/|\/stream\/)/i.test(url.pathname);
+  } catch { return false; }
+}
 function formatStreams(found, players, pageUrl) {
-  const direct = [...found.values()].filter(x => x.source && !/^player-(?:response|dom)$/i.test(x.source)).map(x => ({
+  const direct = [...found.values()].filter(x => x.source && !/^player-(?:response|dom)$/i.test(x.source) && isDirectMediaUrl(x.url)).map(x => ({
     name: "AVMirror",
     title: `${x.source} • ${streamQuality(x)}`,
     url: x.url,
@@ -610,6 +643,8 @@ module.exports = {
   idToUrl,
   isItemUrl,
   isUsefulPlayerUrl,
+  isDirectMediaUrl,
+  formatStreams,
   collectCatalogFromHtml,
   collectFallbackStreams,
   extractSearchoUrls,
