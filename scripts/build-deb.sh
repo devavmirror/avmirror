@@ -40,7 +40,7 @@ cat > "$PKG/DEBIAN/postinst" <<'EOF'
 set -e
 systemctl daemon-reload || true
 systemctl enable avmirror.service || true
-systemctl restart avmirror.service || true
+systemctl start avmirror.service || systemctl restart avmirror.service || true
 EOF
 chmod 0755 "$PKG/DEBIAN/postinst"
 mkdir -p "$ROOT/dist"
