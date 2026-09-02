@@ -18,17 +18,17 @@ if (([IO.Path]::GetExtension($ArtifactUrl).ToLowerInvariant()) -eq '.zip') {
   if (-not $bundle) { $bundle = Get-Item $tempExtract }
   Copy-Item -Path (Join-Path $bundle.FullName '*') -Destination $InstallDir -Recurse -Force
 } else {
-  Copy-Item -Path $download -Destination (Join-Path $InstallDir 'avmirror-windows_26.1.exe') -Force
+  Copy-Item -Path $download -Destination (Join-Path $InstallDir 'avmirror-windows_26.1.1.exe') -Force
 }
-$exe = Join-Path $InstallDir 'avmirror-windows_26.1.exe'
+$exe = Join-Path $InstallDir 'avmirror-windows_26.1.1.exe'
 if (-not (Test-Path $exe) -or (Get-Item $exe).Length -lt 1MB) { throw 'Download do bundle Windows inválido ou incompleto.' }
 
 $rule = Get-NetFirewallRule -DisplayName 'AVMirror LAN (TCP 7000)' -ErrorAction SilentlyContinue
 if (-not $rule) { New-NetFirewallRule -DisplayName 'AVMirror LAN (TCP 7000)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort $Port -Profile Private | Out-Null }
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-$startup = "cmd.exe /d /c `"set LOCAL_MODE=true&&set BIND_HOST=0.0.0.0&&set PORT=$Port&&start `"`" /min `"$exe`"`""
+$startup = "cmd.exe /d /c `"set LOCAL_MODE=true&&set BIND_HOST=0.0.0.0&&set PORT=$Port&&set JABLE_LANGUAGE=en&&set USE_LOCAL_HLS_PROXY=true&&start `"`" /min `"$exe`"`""
 New-ItemProperty -Path $runKey -Name 'AVMirror' -Value $startup -PropertyType String -Force | Out-Null
-$env:LOCAL_MODE = 'true'; $env:BIND_HOST = '0.0.0.0'; $env:PORT = [string]$Port
+$env:LOCAL_MODE = 'true'; $env:BIND_HOST = '0.0.0.0'; $env:PORT = [string]$Port; $env:JABLE_LANGUAGE = 'en'; $env:USE_LOCAL_HLS_PROXY = 'true'
 Start-Process -FilePath $exe -WorkingDirectory $InstallDir -WindowStyle Hidden
 Start-Process "http://localhost:$Port/"
 Write-Host "AVMirror instalado e iniciado em http://localhost:$Port/"

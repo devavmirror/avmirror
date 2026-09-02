@@ -11,6 +11,8 @@ Restart=on-failure
 Environment=LOCAL_MODE=true
 Environment=BIND_HOST=0.0.0.0
 Environment=PORT=7000
+Environment=JABLE_LANGUAGE=en
+Environment=USE_LOCAL_HLS_PROXY=true
 Environment=AVMIRROR_ROOT=/opt/avmirror
 
 [Install]

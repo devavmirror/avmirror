@@ -54,7 +54,7 @@ async function update() {
 }
 function start() {
   const runtime = process.env.AVMIRROR_NODE || process.execPath;
-  const child = cp.spawn(runtime, [path.join(appDir, "server.js")], { cwd: appDir, env: { ...process.env, LOCAL_MODE: "true", BIND_HOST: process.env.BIND_HOST || "0.0.0.0", PORT: process.env.PORT || "7000" }, stdio: "inherit" });
+  const child = cp.spawn(runtime, [path.join(appDir, "server.js")], { cwd: appDir, env: { ...process.env, LOCAL_MODE: "true", BIND_HOST: process.env.BIND_HOST || "0.0.0.0", PORT: process.env.PORT || "7000", JABLE_LANGUAGE: process.env.JABLE_LANGUAGE || "en", USE_LOCAL_HLS_PROXY: process.env.USE_LOCAL_HLS_PROXY || "true" }, stdio: "inherit" });
   child.on("exit", code => process.exit(code ?? 0));
   process.on("SIGINT", () => child.kill("SIGINT"));
   process.on("SIGTERM", () => child.kill("SIGTERM"));
