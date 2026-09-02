@@ -6,9 +6,9 @@ PKG="$OUT/avmirror-local"
 VERSION="${VERSION:-26.1.0}"
 NODE_BIN="${NODE_BIN:-$(command -v node)}"
 rm -rf "$OUT"
-mkdir -p "$PKG/opt/avmirror" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromium" "$PKG/usr/bin" "$PKG/etc/systemd/system" "$PKG/DEBIAN"
-cp -a "$ROOT"/*.js "$ROOT"/lib "$ROOT"/public "$ROOT"/scripts "$ROOT"/package.json "$ROOT"/package-lock.json "$PKG/opt/avmirror/"
-[ -d "$ROOT/node_modules" ] && cp -a "$ROOT/node_modules" "$PKG/opt/avmirror/"
+mkdir -p "$PKG/opt/avmirror/app" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromium" "$PKG/usr/bin" "$PKG/etc/systemd/system" "$PKG/DEBIAN"
+cp -a "$ROOT"/*.js "$ROOT"/lib "$ROOT"/public "$ROOT"/scripts "$ROOT"/package.json "$ROOT"/package-lock.json "$PKG/opt/avmirror/app/"
+[ -d "$ROOT/node_modules" ] && cp -a "$ROOT/node_modules" "$PKG/opt/avmirror/app/"
 cp -L "$NODE_BIN" "$PKG/opt/avmirror/node/node"
 if [ ! -x "$HOME/.cache/ms-playwright/chromium_headless_shell-1193/chrome-linux/headless_shell" ]; then
   PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright" npx playwright install chromium
@@ -17,7 +17,8 @@ mkdir -p "$PKG/opt/avmirror/chromium/chrome-linux"
 cp -a "$HOME/.cache/ms-playwright/chromium_headless_shell-1193/chrome-linux/." "$PKG/opt/avmirror/chromium/chrome-linux/"
 cat > "$PKG/usr/bin/avmirror-local" <<'EOF'
 #!/bin/sh
-exec /opt/avmirror/node/node /opt/avmirror/scripts/start-local.js
+export AVMIRROR_ROOT=/opt/avmirror
+exec /opt/avmirror/node/node /opt/avmirror/app/scripts/auto-update.js
 EOF
 chmod 0755 "$PKG/usr/bin/avmirror-local"
 cp "$ROOT/packaging/systemd/avmirror.service" "$PKG/etc/systemd/system/avmirror.service"
