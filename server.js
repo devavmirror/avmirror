@@ -31,7 +31,7 @@ const MEDIA_HOSTS = /(^|\.)mushroomtrack\.com$/i;
 const manifest = {
   id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
   // Stremio exige SemVer completo internamente; a versão pública do produto é 26.1.
-  version: "26.1.2",
+  version: "26.1.3",
   name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
   description: LOCAL_MODE
@@ -146,14 +146,14 @@ function proxiedStreams(streams, forceLocalProxy) {
       // Return both paths in local mode. Android/TV can use the local proxy,
       // while desktop clients can fall back to the signed source URL if their
       // sandbox cannot reach the loopback address.
-      const useProxy = LOCAL_MODE && USE_LOCAL_HLS_PROXY && forceLocalProxy;
+      const useProxy = LOCAL_MODE && USE_LOCAL_HLS_PROXY;
       const behaviorHints = directBehaviorHints(stream.url, stream.behaviorHints);
       const requestHeaders = behaviorHints.proxyHeaders?.request || {};
       const direct = { ...stream, title: `${stream.title || "Jable.TV"} • Direto`, headers: { ...(stream.headers || {}), ...requestHeaders }, behaviorHints };
       if (useProxy) {
         const { proxyHeaders: _ignoredProxyHeaders, ...proxyHints } = stream.behaviorHints || {};
-        const proxy = { ...stream, title: `${stream.title || "Jable.TV"} • Proxy local`, url: proxyMediaUrl(stream.url), behaviorHints: { ...proxyHints, notWebReady: false } };
-        return [proxy, direct];
+        const proxy = { ...stream, title: `${stream.title || "Jable.TV"} • Proxy local`, url: proxyMediaUrl(stream.url), behaviorHints: { ...proxyHints, notWebReady: true } };
+        return [proxy];
       }
       return [direct];
     });
@@ -435,7 +435,7 @@ app.get("/stream/movie/:id.json", async (req, res) => {
     const streams = await resolveStreams(req.params.id);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader("Cache-Control", "max-age=120, stale-while-revalidate=300, stale-if-error=600, public");
-    res.json({ streams: [supportStream(), ...proxiedStreams(streams, needsProxy)] });
+    res.json({ streams: proxiedStreams(streams, needsProxy) });
   } catch (e) {
     console.error("stream:", e);
     res.json({ streams: [] });
@@ -444,7 +444,7 @@ app.get("/stream/movie/:id.json", async (req, res) => {
 // Fallback for any other stream resource shape the manual route above misses.
 builder.defineStreamHandler(async ({ id }) => {
   try {
-    return { streams: [supportStream(), ...proxiedStreams(await resolveStreams(id), !LOCAL_MODE)] };
+    return { streams: proxiedStreams(await resolveStreams(id), !LOCAL_MODE) };
   } catch (e) {
     console.error("stream:", e);
     return { streams: [] };
