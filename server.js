@@ -141,21 +141,20 @@ function isInternalVideoProxyUrl(rawUrl) {
 function proxiedStreams(streams, forceLocalProxy) {
   return streams
     .filter(stream => stream && (stream.url || stream.externalUrl) && (!stream.url || LOCAL_MODE || !isInternalVideoProxyUrl(stream.url)))
-    .map(stream => {
-      if (!stream.url || stream.externalUrl) return stream;
-      // Per-device: proxy delivery is only used for clients that ignore the
-      // proxyHeaders contract (Android/TV). Clients that repass headers get the
-      // source URL directly so each device resolves playback independently.
+    .flatMap(stream => {
+      if (!stream.url || stream.externalUrl) return [stream];
+      // Return both paths in local mode. Android/TV can use the local proxy,
+      // while desktop clients can fall back to the signed source URL if their
+      // sandbox cannot reach the loopback address.
       const useProxy = LOCAL_MODE && USE_LOCAL_HLS_PROXY && forceLocalProxy;
-      if (useProxy) {
-        return { ...stream, url: proxyMediaUrl(stream.url), behaviorHints: stream.behaviorHints || {} };
-      }
-      // Render never retransmits video; remote deployments deliver the source URL.
-      // Keep both representations because mobile clients differ in how they
-      // apply Stremio's proxyHeaders contract to direct playback.
       const behaviorHints = directBehaviorHints(stream.url, stream.behaviorHints);
       const requestHeaders = behaviorHints.proxyHeaders?.request || {};
-      return { ...stream, headers: { ...(stream.headers || {}), ...requestHeaders }, behaviorHints };
+      const direct = { ...stream, title: `${stream.title || "Jable.TV"} • Direto`, headers: { ...(stream.headers || {}), ...requestHeaders }, behaviorHints };
+      if (useProxy) {
+        const proxy = { ...stream, title: `${stream.title || "Jable.TV"} • Proxy local`, url: proxyMediaUrl(stream.url), behaviorHints: stream.behaviorHints || {} };
+        return [proxy, direct];
+      }
+      return [direct];
     });
 }
 function supportStream() {

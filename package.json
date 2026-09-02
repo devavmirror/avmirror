@@ -15,7 +15,7 @@
     "build:win": "node scripts/build-win.js",
     "build:deb": "bash scripts/build-deb.sh",
     "build:apk": "bash scripts/build-apk.sh",
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "cache:update": "node scripts/update-cache.js"
   },
   "engines": {
