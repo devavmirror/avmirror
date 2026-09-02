@@ -1,0 +1,11 @@
+{
+  "id": "avmirror-direct",
+  "name": "AVMirror Direct",
+  "description": "Provider direto: resolve streams no dispositivo, sem Render ou proxy remoto.",
+  "version": "26.1.0",
+  "author": "devavmirror",
+  "supportedTypes": ["movie"],
+  "filename": "providers/avmirror.js",
+  "enabled": true,
+  "supportsExternalPlayer": true
+}

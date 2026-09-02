@@ -8,6 +8,7 @@ const { getLocalIPv4, getLocalBaseUrl } = require("./lib/network");
 
 const PORT = Number(process.env.PORT || 7000);
 const LOCAL_MODE = process.env.LOCAL_MODE === "1" || process.env.LOCAL_MODE === "true";
+const USE_LOCAL_HLS_PROXY = process.env.USE_LOCAL_HLS_PROXY === "1" || process.env.USE_LOCAL_HLS_PROXY === "true";
 const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
 const RENDER_HOST = process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : "";
 const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || (LOCAL_MODE ? getLocalBaseUrl(PORT) : process.env.RENDER_EXTERNAL_URL || RENDER_HOST || "https://avmirror.onrender.com")).replace(/\/+$/, "");
@@ -180,7 +181,7 @@ function proxiedStreams(streams) {
     .filter(stream => stream && (stream.url || stream.externalUrl))
     .map(stream => {
       if (!stream.url || stream.externalUrl) return stream;
-      if (LOCAL_MODE) {
+      if (LOCAL_MODE && USE_LOCAL_HLS_PROXY) {
         return { ...stream, url: proxyMediaUrl(stream.url), behaviorHints: stream.behaviorHints || {} };
       }
       // Render never retransmits video; remote deployments deliver the source URL.
