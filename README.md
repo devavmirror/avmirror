@@ -64,13 +64,13 @@ npx playwright install chromium
 npm run start:local
 ```
 
-Acesse `http://IP-DO-COMPUTADOR:7000/install` no dispositivo cliente. Para usar o proxy HLS local explicitamente:
+Acesse `http://IP-DO-COMPUTADOR:7000/install` no dispositivo cliente. O proxy HLS local é usado por padrão; para ativá-lo explicitamente:
 
 ```bash
 LOCAL_MODE=true USE_LOCAL_HLS_PROXY=true BIND_HOST=0.0.0.0 PORT=7000 node server.js
 ```
 
-Sem `USE_LOCAL_HLS_PROXY=true`, o servidor local retorna streams diretos por padrão.
+Para forçar URLs diretas no servidor local, use `USE_LOCAL_HLS_PROXY=false`.
 
 ## Requisitos locais
 
@@ -93,7 +93,7 @@ npm run start:local
 | `PUBLIC_BASE_URL` | Origem pública do addon | Detectada pelo ambiente |
 | `BASE_URL` | Fonte primária do catálogo | Configurada pelo servidor |
 | `LOCAL_MODE` | Habilita recursos locais | `false` |
-| `USE_LOCAL_HLS_PROXY` | Ativa o proxy HLS local | `false` |
+| `USE_LOCAL_HLS_PROXY` | Ativa o proxy HLS local | `true` no modo local; `false` no remoto |
 | `CACHE_MIRROR_URL` | Origem JSON do cache público | Cache GitHub do projeto |
 | `CACHE_MIRROR_TIMEOUT_MS` | Tempo máximo de consulta ao cache | `4000` |
 | `ENABLE_BROWSER_STREAMS` | Permite resolução com navegador | Conforme ambiente |
