@@ -1,6 +1,6 @@
 # AVMirror 26.1
 
-Addon para **Stremio** e provider direto para **Nuvio**. O projeto organiza catálogos, metadados e fontes de reprodução para conteúdos que o usuário está autorizado a acessar.
+Addon para **Stremio e Nuvio**, acompanhado de um provider direto para Nuvio. O projeto organiza catálogos, metadados e fontes de reprodução para conteúdos que o usuário está autorizado a acessar.
 
 > **Versão atual: 26.1.0**
 
@@ -14,7 +14,7 @@ O Render não é requisito do modo direto. O projeto também não depende de um 
 
 | Plataforma | Componente | Comportamento padrão | Proxy HLS local |
 | --- | --- | --- | --- |
-| Android | Provider Nuvio | Resolução direta no aparelho | Não aplicável ao plugin sozinho |
+| Android | Addon Nuvio + plugin | Catálogo no addon e resolução complementar no aparelho | Proxy pelo addon local |
 | Windows/Linux | Addon Stremio | URLs diretas da fonte | Opcional |
 | Windows/Linux | Servidor AVMirror | Catálogo, metadados e resolução | Ativável por variável |
 
@@ -32,15 +32,21 @@ https://SEU-ENDERECO/manifest.json
 
 O manifesto também pode ser obtido na página `/install`.
 
-### Nuvio
+### Nuvio: addon com catálogo
 
-No Nuvio, abra **Configurações → Plugins** e adicione:
+No Nuvio, adicione o mesmo manifesto padrão do servidor escolhido. Ele expõe catálogo, metadados e streams:
+
+```text
+https://SEU-ENDERECO/manifest.json
+```
+
+Para complementar a resolução com o provider direto, abra **Configurações → Plugins** e adicione:
 
 ```text
 https://raw.githubusercontent.com/devavmirror/avmirror/main/nuvio/manifest.json
 ```
 
-O arquivo do provider está em `nuvio/providers/avmirror.js`. O Nuvio executa a resolução no próprio aparelho e devolve ao player uma URL direta, sem retransmissão pelo Render.
+O arquivo do provider está em `nuvio/providers/avmirror.js`. O addon fornece o catálogo; o plugin é chamado para resolver fontes no próprio aparelho e devolver ao player uma URL direta. O plugin não mantém um proxy HLS contínuo. Para fontes que exigem proxy, use o addon instalado pelo endereço local do servidor.
 
 ### Servidor local opcional
 
@@ -132,7 +138,7 @@ Os testes automatizados verificam IDs, catálogo, metadados, resolução de stre
 | `scraper.js` | Catálogo, metadados e resolução da fonte principal |
 | `av01.js` | Integração direta com a fonte AV01 |
 | `javrider.js` | Integração com a fonte JavRider |
-| `nuvio/manifest.json` | Registro do provider Nuvio |
+| `nuvio/manifest.json` | Registro do plugin scraper Nuvio |
 | `nuvio/providers/avmirror.js` | Provider Nuvio sem backend obrigatório |
 | `public/install.html` | Página pública de instalação |
 | `scripts/` | Inicialização, builds e empacotamento |
