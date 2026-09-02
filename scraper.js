@@ -504,6 +504,7 @@ function isDirectMediaUrl(raw) {
   } catch { return false; }
 }
 function formatStreams(found, players, pageUrl) {
+  const directRank = url => /\.m3u8(?:[?#]|$)|master\.txt(?:[?#]|$)|\/cdn\/hls\//i.test(url) ? 0 : /\.(?:mp4|m4v|webm)(?:[?#]|$)/i.test(url) ? 1 : 2;
   const direct = [...found.values()].filter(x => x.source && isDirectMediaUrl(x.url)).map(x => {
     const behaviorHints = /\.m3u8(?:[?#]|$)|master\.txt(?:[?#]|$)/i.test(x.url)
       ? { notWebReady: false, bingeGroup: "avmirror" }
@@ -526,7 +527,7 @@ function formatStreams(found, players, pageUrl) {
       headers: { Referer: referer, Origin: new URL(referer).origin },
       behaviorHints
     };
-  }).slice(0, 20);
+  }).sort((a, b) => directRank(a.url) - directRank(b.url)).slice(0, 20);
   // Direct mode never publishes an external player as a stream. Returning an
   // unresolved iframe here makes clients open an ad/redirect page and hides
   // the real source failure; callers can retry the resolver instead.
@@ -562,14 +563,14 @@ async function scrapeStreams(id) {
       const resolvedPlayers = await mapWithConcurrency(candidates, 3, async source => {
         try {
           const player = await resolveSearchoPlayer(source.url);
-          return player?.file ? { ...player, label: source.label } : null;
+          return player?.file ? { ...player, label: source.label, sourceUrl: source.url } : null;
         } catch (e) {
           console.error(`searcho player ${source.label || "unknown"}:`, e.message);
           return null;
         }
       });
       for (const player of resolvedPlayers.filter(Boolean)) {
-        fallback.found.set(`${player.file}#${player.label}`, { url: player.file, source: player.label, referer: player.playerUrl || source.url });
+        fallback.found.set(`${player.file}#${player.label}`, { url: player.file, source: player.label, referer: player.playerUrl || player.sourceUrl || pageUrl });
       }
     }
     for (const [key, value] of fallback.found) httpFound.set(key, value);

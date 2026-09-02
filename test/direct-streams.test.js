@@ -47,6 +47,16 @@ test("extracts protocol-relative and data/script media URLs directly", () => {
   ]);
 });
 
+test("prioritizes direct HLS over MP4 alternatives", () => {
+  const pageUrl = "https://jav.guru/123/title/";
+  const found = new Map([
+    ["mp4", { url: "https://cdn.example.net/title/video.mp4", source: "mp4", referer: pageUrl }],
+    ["hls", { url: "https://cdn.example.net/title/master.m3u8", source: "hls", referer: pageUrl }]
+  ]);
+  const streams = formatStreams(found, new Set(), pageUrl);
+  assert.equal(streams[0].url, "https://cdn.example.net/title/master.m3u8");
+});
+
 test("publishes the source referer as direct playback headers", () => {
   const pageUrl = "https://jav.guru/123/title/";
   const fallback = collectFallbackStreams('<video src="https://cdn.example.net/title/master.m3u8"></video>', pageUrl);
