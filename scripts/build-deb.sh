@@ -6,7 +6,7 @@ PKG="$OUT/avmirror-local"
 VERSION="${VERSION:-26.1.3}"
 NODE_BIN="${NODE_BIN:-$(command -v node)}"
 rm -rf "$OUT"
-mkdir -p "$PKG/opt/avmirror/app" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromium" "$PKG/usr/bin" "$PKG/usr/share/applications" "$PKG/etc/systemd/system" "$PKG/DEBIAN"
+mkdir -p "$PKG/opt/avmirror/app" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromium" "$PKG/usr/bin" "$PKG/usr/share/applications" "$PKG/usr/share/icons/hicolor/256x256/apps" "$PKG/etc/systemd/system" "$PKG/DEBIAN"
 cp -a "$ROOT"/*.js "$ROOT"/lib "$ROOT"/public "$ROOT"/scripts "$ROOT"/package.json "$ROOT"/package-lock.json "$PKG/opt/avmirror/app/"
 [ -d "$ROOT/node_modules" ] && cp -a "$ROOT/node_modules" "$PKG/opt/avmirror/app/"
 cp -L "$NODE_BIN" "$PKG/opt/avmirror/node/node"
@@ -23,6 +23,7 @@ EOF
 chmod 0755 "$PKG/usr/bin/avmirror-local"
 cp "$ROOT/packaging/systemd/avmirror.service" "$PKG/etc/systemd/system/avmirror.service"
 cp "$ROOT/packaging/avmirror.desktop" "$PKG/usr/share/applications/avmirror.desktop"
+cp "$ROOT/public/logo.png" "$PKG/usr/share/icons/hicolor/256x256/apps/avmirror.png"
 cp "$ROOT/packaging/avmirror-local-open" "$PKG/usr/bin/avmirror-local-open"
 chmod 0755 "$PKG/usr/bin/avmirror-local-open"
 cat > "$PKG/DEBIAN/control" <<EOF
@@ -41,6 +42,8 @@ set -e
 systemctl daemon-reload || true
 systemctl enable avmirror.service || true
 systemctl start avmirror.service || systemctl restart avmirror.service || true
+if command -v update-desktop-database >/dev/null 2>&1; then update-desktop-database /usr/share/applications || true; fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true; fi
 EOF
 chmod 0755 "$PKG/DEBIAN/postinst"
 mkdir -p "$ROOT/dist"

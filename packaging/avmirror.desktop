@@ -2,8 +2,10 @@
 Type=Application
 Name=AVMirror Local
 Comment=Servidor local AVMirror para Stremio
-Exec=avmirror-local-open
-Icon=applications-internet
+Exec=/usr/bin/avmirror-local-open
+TryExec=/usr/bin/avmirror-local-open
+Icon=avmirror
 Terminal=false
+StartupNotify=true
 Categories=AudioVideo;Network;
 Keywords=Stremio;AVMirror;servidor;addon;
