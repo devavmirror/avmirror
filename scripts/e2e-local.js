@@ -39,11 +39,15 @@ async function main() {
           r.streams = streams.status;
           const streamJson = JSON.parse(streams.body.toString());
           for (const stream of (streamJson.streams || []).filter(x => x.url).slice(0, 3)) {
-            const media = await request(stream.url);
+            const playbackHeaders = {
+              ...(stream.headers || {}),
+              ...(stream.behaviorHints?.proxyHeaders?.request || {})
+            };
+            const media = await request(stream.url, { headers: playbackHeaders });
             const entry = { title: stream.title, status: media.status, type: media.type, bytes: media.body.length };
             if (media.status === 200 && /mpegurl|text\/plain/i.test(media.type)) {
               const uri = media.body.toString().split(/\r?\n/).find(line => line.trim() && !line.startsWith('#'));
-              if (uri) { const segment = await request(new URL(uri.trim(), media.url).href, { headers: { range: 'bytes=0-1023' } }); entry.segmentStatus = segment.status; entry.segmentType = segment.type; }
+              if (uri) { const segment = await request(new URL(uri.trim(), media.url).href, { headers: { ...playbackHeaders, range: 'bytes=0-1023' } }); entry.segmentStatus = segment.status; entry.segmentType = segment.type; }
             }
             r.media.push(entry);
             if (media.status !== 200 || entry.segmentStatus && ![200, 206].includes(entry.segmentStatus)) r.errors.push(`media:${media.status}/segment:${entry.segmentStatus || '-'}`);

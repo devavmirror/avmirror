@@ -103,3 +103,24 @@ test("JavRider streams accept a direct HTML5 MP4 source", async () => {
     assert.equal(streams[0].url, media);
   } finally { global.fetch = originalFetch; await closeJavRiderBrowser(); }
 });
+
+test("JavRider resolves nested generic players before browser capture", async () => {
+  const article = "https://javrider.com/sone-005-nested-player/";
+  const player = "https://embed.example/one";
+  const nested = "https://cdn.example/player-two";
+  const media = "https://cdn.example.net/sone-005/master.txt?token=ok";
+  global.fetch = async url => {
+    url = String(url);
+    if (url === article) return response(`<iframe src="${player}"></iframe>`);
+    if (url === player) return response(`<iframe src="${nested}"></iframe>`);
+    if (url === nested) return response(`<script>var source = "${media}";</script>`);
+    return response("<html></html>");
+  };
+  const id = `javrider:${Buffer.from(article).toString("base64url")}`;
+  try {
+    const streams = await scrapeJavRiderStreams(id);
+    assert.equal(streams.length, 1);
+    assert.equal(streams[0].url, media);
+    assert.equal(streams[0].behaviorHints.proxyHeaders.request.Referer, article);
+  } finally { global.fetch = originalFetch; await closeJavRiderBrowser(); }
+});

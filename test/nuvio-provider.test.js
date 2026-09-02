@@ -30,3 +30,23 @@ test("Nuvio provider extracts JavRider master.txt directly", async () => {
     assert.equal(streams[0].url, media);
   } finally { global.fetch = originalFetch; }
 });
+
+test("Nuvio provider follows nested arbitrary iframes and data-file media", async () => {
+  const page = "https://jav.guru/123/nested-title/";
+  const player = "https://embed.example/frame";
+  const nested = "https://cdn.example/frame-two";
+  const media = "https://cdn.example.net/title/master.txt?token=ok";
+  global.fetch = async url => {
+    url = String(url);
+    if (url === page) return new Response(`<iframe src="${player}"></iframe>`);
+    if (url === player) return new Response(`<iframe src="${nested}"></iframe>`);
+    if (url === nested) return new Response(`<div data-file="${media}"></div>`);
+    return new Response("");
+  };
+  try {
+    const streams = await provider.getStreams(id("avmirror:", page), "movie");
+    assert.equal(streams.length, 1);
+    assert.equal(streams[0].url, media);
+    assert.equal(streams[0].headers.Referer, nested);
+  } finally { global.fetch = originalFetch; }
+});

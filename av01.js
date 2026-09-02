@@ -219,13 +219,14 @@ async function scrapeAv01Meta(id) {
 
 async function getAv01CdnAccess(videoId) {
   const geo = await getGeo();
+  if (!geo?.token_v2 || !geo?.expires || !geo?.ip) throw new Error("AV01 geo response is incomplete");
   const params = new URLSearchParams({
     token_v2: geo.token_v2,
     expires: geo.expires,
     ip: geo.ip
   });
   const access = await requestJson(`videos/${videoId}/cdn-access?${params.toString()}`);
-  return access?.access_token || null;
+  return typeof access?.access_token === "string" && access.access_token ? access.access_token : null;
 }
 
 async function scrapeAv01Streams(id) {
@@ -240,7 +241,10 @@ async function scrapeAv01Streams(id) {
   } catch (error) {
     console.error("AV01 CDN access:", error.message);
   }
-  const query = accessToken ? `?access_token=${encodeURIComponent(accessToken)}` : "";
+  // Never expose an unsigned fallback: direct players cannot refresh this URL
+  // and would keep showing a dead AV01 stream until their cache expires.
+  if (!accessToken) return [];
+  const query = `?access_token=${encodeURIComponent(accessToken)}`;
   const url = `${AV01_BASE_URL}/api/v1/videos/${videoId}/manifest/master.m3u8${query}`;
   return cacheSet(cacheKey, [{
     name: "AVMirror",

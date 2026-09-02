@@ -272,8 +272,13 @@ async function scrapeMeta(id) {
 
 function isMediaUrl(u) {
   if (!u || !/^https?:/i.test(u)) return false;
-  try { const parsed = new URL(u); if (BLOCKED_HOSTS.test(parsed.hostname) || AD_HOSTS.test(parsed.hostname) || AD_URL_PARTS.test(parsed.pathname + parsed.search)) return false; } catch { return false; }
-  return /\.(m3u8|mp4|m4v|webm|mov|ts)(?:[?#].*)?$/i.test(u) || /(?:m3u8|mp4|manifest|playlist|videoplayback|master\.m3u|hls)/i.test(u);
+  try {
+    const parsed = new URL(u);
+    const target = parsed.pathname + parsed.search;
+    if (BLOCKED_HOSTS.test(parsed.hostname) || AD_HOSTS.test(parsed.hostname) || AD_URL_PARTS.test(target)) return false;
+    return /\.(m3u8|mp4|m4v|webm|mov|ts)(?:[?#].*)?$/i.test(target)
+      || /(?:master\.(?:m3u|txt)|videoplayback|[/](?:manifest|playlist|stream|hls)(?:[/?.]|$))/i.test(target);
+  } catch { return false; }
 }
 async function isPlayableHls(url, referer = `${BASE_URL}/`) {
   if (!/\.(?:m3u8|master\.txt)(?:[?#]|$)|\/cdn\/hls\//i.test(url)) return true;
@@ -305,29 +310,45 @@ function isUsefulPlayerUrl(u) {
   } catch { return false; }
 }
 
+function decodeEmbeddedText(value) {
+  return String(value || "")
+    .replace(/\\u002f/gi, "/")
+    .replace(/\\u003a/gi, ":")
+    .replace(/\\u0026/gi, "&")
+    .replace(/\\u003d/gi, "=")
+    .replace(/\\x2f/gi, "/")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"');
+}
+
 function collectFallbackStreams(html, pageUrl) {
   const found = new Map();
   const players = new Set();
   const addMedia = (u, source) => {
-    u = abs(u, pageUrl);
-    if (isMediaUrl(u)) found.set(u, { url: u, source });
+    u = abs(String(u || "").replace(/[),;]+$/, ""), pageUrl);
+    if (isMediaUrl(u)) found.set(u, { url: u, source, referer: pageUrl });
   };
   const addPlayer = u => {
     u = abs(u, pageUrl);
     if (isUsefulPlayerUrl(u)) players.add(u);
   };
-  const decoded = String(html || "")
-    .replace(/\\\//g, "/")
-    .replace(/\\u0026/g, "&")
-    .replace(/\\u003d/g, "=");
-  for (const u of decoded.match(/https?:[^"'<>\s]+/g) || []) addMedia(u, "html");
+  const decoded = decodeEmbeddedText(html);
+  for (const u of decoded.match(/(?:https?:)?[/][/][^"'<>]+/g) || []) addMedia(u.trim(), "html");
   const $ = cheerio.load(decoded);
-  $("iframe[src],embed[src],video[src],video source[src],audio[src],audio source[src]").each((_, el) => {
-    const u = $(el).attr("src");
-    if (/^(iframe|embed)$/i.test(el.tagName)) addPlayer(u, pageUrl);
-    else addMedia(u, "html", pageUrl);
+  $("iframe[src],embed[src],iframe[data-src],embed[data-src]").each((_, el) => {
+    addPlayer($(el).attr("src") || $(el).attr("data-src"));
   });
-  for (const match of decoded.matchAll(/"iframe_url"\s*:\s*"([^"]+)"/g)) {
+  $("video[src],video source[src],audio[src],audio source[src],video[data-src],video source[data-src],audio[data-src],audio source[data-src]").each((_, el) => {
+    addMedia($(el).attr("src") || $(el).attr("data-src"), "html");
+  });
+  $("[data-file],[data-hls],[data-video],[data-stream]").each((_, el) => {
+    addMedia($(el).attr("data-file") || $(el).attr("data-hls") || $(el).attr("data-video") || $(el).attr("data-stream"), "html-data");
+  });
+  for (const match of decoded.matchAll(/(?:file|src|source|streaming_url|hls|m3u8|mp4)[ \t]*(?:[:=])[ \t]*["']([^"']+)["']/gi)) {
+    addMedia(match[1], "html-script");
+  }
+  for (const match of decoded.matchAll(/"iframe_url"[ \t]*:[ \t]*"([^"]+)"/g)) {
     try { addPlayer(Buffer.from(match[1], "base64url").toString("utf8")); } catch {}
   }
   return { found, players };
@@ -410,12 +431,18 @@ async function resolveSearchoPlayer(searchoUrl) {
     finalPage = browserPage;
     browserMedia = [...browserMedia, ...(browserPage.media || [])];
   }
-  const playerHtml = finalPage.html;
-  const unpacked = unpackPlayerScript(playerHtml);
+  const playerHtml = decodeEmbeddedText(finalPage.html);
+  const unpacked = decodeEmbeddedText(unpackPlayerScript(playerHtml));
   const directFile = unpacked.match(/\bfile:\s*["']([^"']+)["']/)?.[1];
   const hlsFiles = [...unpacked.matchAll(/["']hls\d+["']\s*:\s*["']([^"']+)["']/g)].map(x => x[1]);
-  const inlineHls = [...playerHtml.matchAll(/https?:[^"'\\s<>]+\.m3u8(?:\?[^"'\\s<>]*)?/gi)].map(x => x[0]);
-  let file = browserMedia.find(isMediaUrl) || hlsFiles.find(x => /\.m3u8(?:[?#]|$)/i.test(x)) || hlsFiles.find(isMediaUrl) || directFile || inlineHls.find(x => !/test-videos\.co\.uk/i.test(x));
+  const inlineHls = [...playerHtml.matchAll(/https?:[^"'\s<>]+\.(?:m3u8|mp4|m4v|webm|master\.txt)(?:\?[^"'\s<>]*)?/gi)].map(x => x[0]);
+  const embedded = collectFallbackStreams(`${unpacked}\n${playerHtml}`, realUrl).found;
+  let file = browserMedia.find(isMediaUrl)
+    || hlsFiles.find(x => /\.(?:m3u8|master\.txt)(?:[?#]|$)/i.test(x))
+    || hlsFiles.find(isMediaUrl)
+    || directFile
+    || inlineHls.find(x => !/test-videos\.co\.uk/i.test(x))
+    || [...embedded.keys()].find(isMediaUrl);
   if (!file) {
     try {
       const parsed = new URL(finalPage.url);
@@ -477,19 +504,32 @@ function isDirectMediaUrl(raw) {
   } catch { return false; }
 }
 function formatStreams(found, players, pageUrl) {
-  const direct = [...found.values()].filter(x => x.source && !/^player-(?:response|dom)$/i.test(x.source) && isDirectMediaUrl(x.url)).map(x => ({
-    name: "AVMirror",
-    title: `${x.source} • ${streamQuality(x)}`,
-    url: x.url,
-    behaviorHints: /\.m3u8(?:[?#]|$)/i.test(x.url) ? { notWebReady: false, bingeGroup: "avmirror" } : {}
-  })).slice(0, 20);
-  if (direct.length || !players?.size) return direct;
-  return [...players].slice(0, 4).map((url, index) => ({
-    name: "AVMirror",
-    title: `Player externo${index ? ` ${index + 1}` : ""}`,
-    externalUrl: url,
-    behaviorHints: { notWebReady: true }
-  }));
+  const direct = [...found.values()].filter(x => x.source && isDirectMediaUrl(x.url)).map(x => {
+    const behaviorHints = /\.m3u8(?:[?#]|$)|master\.txt(?:[?#]|$)/i.test(x.url)
+      ? { notWebReady: false, bingeGroup: "avmirror" }
+      : {};
+    const referer = x.referer || pageUrl;
+    if (referer) {
+      try {
+        behaviorHints.proxyHeaders = {
+          request: {
+            Referer: referer,
+            Origin: new URL(referer).origin
+          }
+        };
+      } catch {}
+    }
+    return {
+      name: "AVMirror",
+      title: `${x.source} • ${streamQuality(x)}`,
+      url: x.url,
+      behaviorHints
+    };
+  }).slice(0, 20);
+  // Direct mode never publishes an external player as a stream. Returning an
+  // unresolved iframe here makes clients open an ad/redirect page and hides
+  // the real source failure; callers can retry the resolver instead.
+  return direct;
 }
 async function mapWithConcurrency(items, limit, fn) {
   const out = new Array(items.length);
@@ -528,7 +568,7 @@ async function scrapeStreams(id) {
         }
       });
       for (const player of resolvedPlayers.filter(Boolean)) {
-        fallback.found.set(`${player.file}#${player.label}`, { url: player.file, source: player.label });
+        fallback.found.set(`${player.file}#${player.label}`, { url: player.file, source: player.label, referer: player.playerUrl || source.url });
       }
     }
     for (const [key, value] of fallback.found) httpFound.set(key, value);
@@ -537,8 +577,9 @@ async function scrapeStreams(id) {
     // If the source already yielded playable HTTP/HLS URLs, avoid the much
     // slower Playwright path. Browser capture remains a fallback for sources
     // that expose only a dynamic player.
-    if (httpStreams.length || !ENABLE_BROWSER_STREAMS) {
-      return httpStreams.length ? cs("streams:" + id, httpStreams) : httpStreams;
+    const hasDirectHttpStream = httpStreams.some(stream => stream?.url && isDirectMediaUrl(stream.url));
+    if (hasDirectHttpStream || !ENABLE_BROWSER_STREAMS) {
+      return hasDirectHttpStream ? cs("streams:" + id, httpStreams) : httpStreams;
     }
   } catch (e) { console.error("stream http:", e.message); }
 
@@ -547,7 +588,7 @@ async function scrapeStreams(id) {
     const found = new Map();
     const players = new Set();
     let activeLabel = null;
-    const addMedia = (u, source, base = pageUrl) => { u = abs(u, base); if (isMediaUrl(u)) found.set(u, { url: u, source }); };
+    const addMedia = (u, source, base = pageUrl) => { u = abs(u, base); if (isMediaUrl(u)) found.set(u, { url: u, source, referer: base }); };
   const addPlayer = (u, base = pageUrl) => { u = abs(u, base); if (isUsefulPlayerUrl(u)) players.add(u); };
 
   const attachFrameListeners = frame => {
@@ -580,7 +621,7 @@ async function scrapeStreams(id) {
           addMedia(r.url(), activeLabel || "player-response", frameUrl);
         }
         if (type.includes("json") || type.includes("javascript") || type.includes("text/")) r.text().then(text => {
-          for (const candidate of String(text).match(/https?:[^"'<>\\s]+/g) || []) if (isMediaUrl(candidate)) addMedia(candidate, activeLabel || "player-response", frameUrl);
+          for (const candidate of String(text).match(/https?:[^"'<> \t\r\n]+/g) || []) if (isMediaUrl(candidate)) addMedia(candidate, activeLabel || "player-response", frameUrl);
         }).catch(() => {});
       } catch {}
     });

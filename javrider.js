@@ -14,7 +14,7 @@ let browserPromise = null;
 
 const JAVRIDER_GENRES = ["Subtitle", "Censored", "FC2", "English"];
 const AD_PATTERN = /(?:doubleclick|googlesyndication|googleadservices|popunder|popup|popads|adservice|tiktokcdn|ad-site|\.image(?:[/?#]|$))/i;
-const MEDIA_PATTERN = /(?:\.m3u8(?:[?#]|$)|\.mp4(?:[?#]|$)|\.m4v(?:[?#]|$)|\.webm(?:[?#]|$)|\/cdn\/hls\/|\/m3\/|master\.txt|videoplayback|manifest|playlist|stream)/i;
+const MEDIA_PATTERN = /(?:[.]m3u8(?:[?#]|$)|[.]mp4(?:[?#]|$)|[.]m4v(?:[?#]|$)|[.]webm(?:[?#]|$)|[/]cdn[/]hls[/]|[/]m3[/]|master[.]txt|videoplayback|[/](?:manifest|playlist|stream|hls)(?:[/?.]|$))/i;
 
 const clean = value => String(value || "").replace(/\s+/g, " ").trim();
 function absolute(value, base = BASE_URL) { try { return new URL(String(value || ""), base).href; } catch { return ""; } }
@@ -24,6 +24,64 @@ function isItemUrl(value) { try { const url = new URL(value, BASE_URL); return u
 function makeId(url) { return `javrider:${Buffer.from(url).toString("base64url")}`; }
 function idToUrl(id) { try { const url = Buffer.from(String(id || "").replace(/^javrider:/, ""), "base64url").toString("utf8"); return /^javrider:/.test(id) && isItemUrl(url) ? url : ""; } catch { return ""; } }
 function normalizePoster(value, base = BASE_URL) { const url = absolute(value, base); return url && /(?:wp-content\/uploads|javphotos\.com)/i.test(url) ? url : ""; }
+
+function decodeEmbeddedText(value) {
+  return String(value || "")
+    .replace(/\\u002f/gi, "/")
+    .replace(/\\u003a/gi, ":")
+    .replace(/\\u003d/gi, "=")
+    .replace(/\\u0026/gi, "&")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"');
+}
+
+function isJavRiderMediaUrl(url) {
+  try {
+    const parsed = new URL(String(url || ""));
+    const target = parsed.pathname + parsed.search;
+    if (/(?:^|[/_.-])(?:preview|thumbnail|thumb|poster|sample)(?:[/_.-]|$)/i.test(parsed.pathname)) return false;
+    return MEDIA_PATTERN.test(target);
+  } catch { return false; }
+}
+
+function extractMediaUrls(html, pageUrl) {
+  const decoded = decodeEmbeddedText(html), found = new Set();
+  const add = value => {
+    const url = absolute(value, pageUrl);
+    if (url && /^https?:/i.test(url) && !AD_PATTERN.test(url) && isJavRiderMediaUrl(url)) found.add(url);
+  };
+  for (const match of decoded.match(/(?:https?:)?[/][/][^"'<> \t\r\n]+/g) || []) add(match);
+  const $ = cheerio.load(decoded);
+  $("video[src],video source[src],audio[src],audio source[src],video[data-src],video source[data-src],audio[data-src],audio source[data-src]").each((_, element) => add($(element).attr("src") || $(element).attr("data-src")));
+  $("[data-file],[data-hls],[data-video],[data-stream]").each((_, element) => add($(element).attr("data-file") || $(element).attr("data-hls") || $(element).attr("data-video") || $(element).attr("data-stream")));
+  for (const match of decoded.matchAll(/(?:file|src|source|streaming_url|hls|m3u8|mp4|master[.]txt)[ 	]*(?:[:=])[ 	]*["']([^"']+)["']/gi)) add(match[1]);
+  return [...found];
+}
+
+function extractPlayerUrls(html, pageUrl) {
+  const decoded = decodeEmbeddedText(html), found = new Set();
+  const add = value => {
+    const url = absolute(value, pageUrl);
+    if (url && /^https?:/i.test(url) && !AD_PATTERN.test(url) && !isJavRiderMediaUrl(url)) found.add(url);
+  };
+  for (const match of decoded.matchAll(/<(?:iframe|embed)[^>]+(?:src|data-src|data-url)=["']([^"']+)["']/gi)) add(match[1]);
+  for (const match of decoded.matchAll(/(?:iframe_url|player_url|embed_url)[ \t]*:[ \t]*["']([^"']+)["']/gi)) add(match[1]);
+  return [...found].slice(0, 6);
+}
+
+async function resolvePlayerDirect(playerUrl, referer, depth = 0, visited = new Set()) {
+  if (!playerUrl || depth > 3 || visited.has(playerUrl)) return [];
+  visited.add(playerUrl);
+  let playerHtml = "";
+  try { playerHtml = await get(playerUrl, referer); } catch { return []; }
+  const direct = extractMediaUrls(playerHtml, playerUrl);
+  if (direct.length) return direct;
+  const nested = extractPlayerUrls(playerHtml, playerUrl);
+  const results = await Promise.all(nested.map(player => resolvePlayerDirect(player, playerUrl, depth + 1, visited)));
+  const streams = [].concat(...results), seen = new Set();
+  return streams.filter(stream => !seen.has(stream) && seen.add(stream)).slice(0, 10);
+}
 
 async function get(url, referer = `${BASE_URL}/`) {
   const key = `http:${url}`, hit = cacheGet(key); if (hit) return hit;
@@ -43,8 +101,8 @@ async function getBrowser() { if (!browserPromise) { const configuredPath = proc
 async function capture(url, referer = `${BASE_URL}/`) {
   const browser = await getBrowser(), context = await browser.newContext({ userAgent: USER_AGENT, viewport: { width: 1280, height: 900 }, ignoreHTTPSErrors: true });
   const page = await context.newPage(), media = new Set();
-  const collect = response => { const target = response.url(), type = String(response.headers()["content-type"] || ""); if (!AD_PATTERN.test(target) && (MEDIA_PATTERN.test(target) || /mpegurl|video\//i.test(type))) media.add(target); };
-  page.on("response", collect); page.on("request", request => { if (!AD_PATTERN.test(request.url()) && MEDIA_PATTERN.test(request.url())) media.add(request.url()); });
+  const collect = response => { const target = response.url(), type = String(response.headers()["content-type"] || ""); if (!AD_PATTERN.test(target) && (isJavRiderMediaUrl(target) || /mpegurl|video\//i.test(type))) media.add(target); };
+  page.on("response", collect); page.on("request", request => { if (!AD_PATTERN.test(request.url()) && isJavRiderMediaUrl(request.url())) media.add(request.url()); });
   try {
     await page.goto(url, { referer, waitUntil: "domcontentloaded", timeout: PLAYER_TIMEOUT_MS });
     await page.waitForTimeout(800);
@@ -57,7 +115,7 @@ async function capture(url, referer = `${BASE_URL}/`) {
     for (let attempt = 0; attempt < 12 && !media.size; attempt++) await page.waitForTimeout(500);
     const sources = await page.locator("video,video source,audio,audio source").evaluateAll(nodes => nodes.map(node => node.currentSrc || node.src || node.getAttribute("src")).filter(Boolean)).catch(() => []);
     const resources = await page.evaluate(() => performance.getEntriesByType("resource").map(entry => entry.name)).catch(() => []);
-    for (const source of [...sources, ...resources]) if (!/^blob:/i.test(source) && !AD_PATTERN.test(source) && MEDIA_PATTERN.test(source)) media.add(absolute(source, page.url()));
+    for (const source of [...sources, ...resources]) if (!/^blob:/i.test(source) && !AD_PATTERN.test(source) && isJavRiderMediaUrl(source)) media.add(absolute(source, page.url()));
     return [...media].filter(value => /^https?:/i.test(value) && !AD_PATTERN.test(value));
   } finally { await context.close().catch(() => {}); }
 }
@@ -96,22 +154,31 @@ async function scrapeJavRiderStreams(id) {
   const key = `streams:${url}`, hit = cacheGet(key); if (hit) return hit;
   try {
     const html = await get(url), $ = cheerio.load(html), players = new Set();
-    $("iframe[src],embed[src]").each((_, element) => players.add(absolute($(element).attr("src"), url)));
-    for (const candidate of html.match(/https?:\/\/javplayers\.com\/video\/[a-z0-9]+[^"'<>\s]*/gi) || []) players.add(candidate.replace(/&amp;/g, "&"));
-    const media = new Set();
-    $("video[src],video source[src],audio[src],audio source[src]").each((_, element) => { const candidate = absolute($(element).attr("src"), url); if (MEDIA_PATTERN.test(candidate) && !AD_PATTERN.test(candidate)) media.add(candidate); });
-    const hlsId = html.match(/(?:akmicdn\.com\/cdn\/down\/|javplayers\.com\/cdn\/hls\/)([a-f0-9]{32})\//i)?.[1];
+    $("iframe[src],embed[src],iframe[data-src],embed[data-src]").each((_, element) => {
+      const player = absolute($(element).attr("src") || $(element).attr("data-src"), url);
+      if (player && !AD_PATTERN.test(player)) players.add(player);
+    });
+    for (const candidate of decodeEmbeddedText(html).match(/https?:[/][/](?:www[.])?javplayers[.]com[/]video[/][a-z0-9]+[^"'<> \t\r\n]*/gi) || []) players.add(candidate);
+    const media = new Set(extractMediaUrls(html, url));
+    const hlsId = html.match(/(?:akmicdn[.]com[/]cdn[/]down[/]|javplayers[.]com[/]cdn[/]hls[/])([a-f0-9]{32})[/]/i)?.[1];
     if (hlsId) media.add(`https://javplayers.com/cdn/hls/${hlsId}/master.txt`);
     if (!media.size) {
-      const playersToResolve = [...players].slice(0, 3);
+      const playersToResolve = [...players].slice(0, 4);
       const apiResults = await Promise.all(playersToResolve.map(async player => {
-        const playerId = player.match(/\/video\/([a-z0-9]+)(?:[/?#]|$)/i)?.[1];
-        if (!playerId) return "";
+        const playerId = player.match(/[/]video[/]([a-z0-9]+)(?:[/?#]|$)/i)?.[1];
+        if (!playerId) return [];
         const playerHtml = await get(`https://javplayers.com/player/index.php?data=${encodeURIComponent(playerId)}&do=getVideo`, player).catch(() => "");
-        const playerHlsId = playerHtml.match(/(?:akmicdn\.com\/cdn\/down\/|javplayers\.com\/cdn\/hls\/)([a-f0-9]{32})\//i)?.[1];
-        return playerHlsId ? `https://javplayers.com/cdn/hls/${playerHlsId}/master.txt` : "";
+        const resolved = extractMediaUrls(playerHtml, player);
+        const playerHlsId = playerHtml.match(/(?:akmicdn[.]com[/]cdn[/]down[/]|javplayers[.]com[/]cdn[/]hls[/])([a-f0-9]{32})[/]/i)?.[1];
+        if (playerHlsId) resolved.push(`https://javplayers.com/cdn/hls/${playerHlsId}/master.txt`);
+        return resolved;
       }));
-      for (const candidate of apiResults.filter(Boolean)) media.add(candidate);
+      for (const result of apiResults) for (const candidate of result) media.add(candidate);
+    }
+    if (!media.size) {
+      const playersToResolve = [...players].slice(0, 4);
+      const directResults = await Promise.all(playersToResolve.map(player => resolvePlayerDirect(player, url)));
+      for (const result of directResults) for (const candidate of result) media.add(candidate);
     }
     if (!media.size) {
       for (const player of [...players].slice(0, 2)) {
@@ -119,7 +186,14 @@ async function scrapeJavRiderStreams(id) {
         if (media.size) break;
       }
     }
-    const streams = [...media].slice(0, 10).map((mediaUrl, index) => { const isHls = /\.m3u8|master\.txt|\/cdn\/hls\//i.test(mediaUrl); return { name: "AVMirror", title: `JavRider • ${isHls ? "HLS" : "MP4"}${index ? ` ${index + 1}` : ""}`, url: mediaUrl, behaviorHints: isHls ? { notWebReady: false, bingeGroup: "javrider" } : {} }; });
+    const streams = [...media].slice(0, 10).map((mediaUrl, index) => {
+      const isHls = /\.m3u8|master\.txt|\/cdn\/hls\//i.test(mediaUrl);
+      const behaviorHints = isHls ? { notWebReady: false, bingeGroup: "javrider" } : {};
+      try {
+        behaviorHints.proxyHeaders = { request: { Referer: url, Origin: new URL(url).origin } };
+      } catch {}
+      return { name: "AVMirror", title: `JavRider • ${isHls ? "HLS" : "MP4"}${index ? ` ${index + 1}` : ""}`, url: mediaUrl, behaviorHints };
+    });
     return streams.length ? cacheSet(key, streams) : [];
   } catch (error) { console.error("javrider streams:", error.message); return []; }
 }

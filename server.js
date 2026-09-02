@@ -173,6 +173,7 @@ function sourceReferer(rawUrl) {
     if (host.endsWith("javplayers.com") || host.endsWith("akmicdn.com")) return "https://javplayers.com/";
     if (host.endsWith("premilkyway.com") || host.endsWith("s1q2105.com") || host.endsWith("cdn-centaurus.com")) return "https://jav.guru/";
     if (host.endsWith("turboviplay.com")) return "https://turbovidhls.com/";
+    if (host.endsWith("maxstream.org")) return "https://jav.guru/";
     if (host.endsWith("97bf1.com")) return "https://vidara.to/";
     if (host.endsWith("tnmr.org")) return "https://streamhihi.com/";
     if (host === "www.av01.media" || host === "customers.iw01.xyz") return "https://www.av01.media/";
@@ -189,17 +190,24 @@ function rememberMediaCookies(response, host) {
   mediaCookies.set(host, [...current].map(([name, value]) => `${name}=${value}`).join("; "));
 }
 function directBehaviorHints(rawUrl, behaviorHints = {}) {
-  const referer = sourceReferer(rawUrl);
+  const requestHeaders = behaviorHints.proxyHeaders?.request || {};
+  const canonicalReferer = sourceReferer(rawUrl);
+  let host = "";
+  try { host = new URL(rawUrl).hostname.toLowerCase(); } catch {}
+  const sourceNeedsCanonicalReferer = /(?:^|[.])(?:premilkyway[.]com|s1q2105[.]com|cdn-centaurus[.]com|maxstream[.]org)$/i.test(host);
+  const referer = sourceNeedsCanonicalReferer ? canonicalReferer : requestHeaders.Referer || canonicalReferer;
+  let origin = requestHeaders.Origin;
+  try { origin ||= new URL(referer).origin; } catch { origin = undefined; }
   return {
     ...behaviorHints,
     // These headers are sent by the Stremio client to the source, not by Render.
     proxyHeaders: {
       ...(behaviorHints.proxyHeaders || {}),
       request: {
-        ...(behaviorHints.proxyHeaders?.request || {}),
-        "User-Agent": DIRECT_STREAM_USER_AGENT,
+        ...requestHeaders,
+        "User-Agent": requestHeaders["User-Agent"] || DIRECT_STREAM_USER_AGENT,
         Referer: referer,
-        Origin: new URL(referer).origin
+        ...(origin ? { Origin: origin } : {})
       }
     }
   };
@@ -467,7 +475,7 @@ app.all("/hls", async (req, res) => {
     }
     const host = new URL(rawUrl).hostname.toLowerCase();
     const luluCode = host.endsWith("tnmr.org") ? rawUrl.match(/\/([^/]+)_h\/master\.m3u8/i)?.[1] : null;
-    const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("premilkyway.com") || host.endsWith("s1q2105.com") || host.endsWith("cdn-centaurus.com") ? "https://jav.guru/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("av01.media") || host.endsWith("iw01.xyz") ? "https://www.av01.media/" : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
+    const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("premilkyway.com") || host.endsWith("s1q2105.com") || host.endsWith("cdn-centaurus.com") || host.endsWith("maxstream.org") ? "https://jav.guru/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("av01.media") || host.endsWith("iw01.xyz") ? "https://www.av01.media/" : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
     const requestHeaders = { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36", referer, origin: new URL(referer).origin, accept: "*/*" };
     if (req.headers.range) requestHeaders.range = req.headers.range;
     if (mediaCookies.get(host)) requestHeaders.cookie = mediaCookies.get(host);
