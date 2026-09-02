@@ -41,20 +41,42 @@ function encodedUrl(id, prefix) {
 function extractDirectStreams(html, pageUrl, label) {
   var found = [];
   var seen = {};
-  var pattern = /https?:\/\/[^\s"'<>\\]+?\.(?:m3u8|mp4)(?:\?[^\s"'<>]*)?/gi;
+  var decoded = String(html || "").replace(/\\u002f/gi, "/").replace(/\\u003a/gi, ":").replace(/\\\//g, "/").replace(/&amp;/gi, "&");
+  var pattern = /https?:\/\/[^\s"'<>\\]+(?:\.m3u8|\.mp4|\.m4s|\.ts|master\.txt|\/cdn\/hls\/|\/m3\/)[^\s"'<>\\]*/gi;
   var match;
-  while ((match = pattern.exec(html || ""))) {
-    var url = match[0].replace(/\\/g, "");
+  while ((match = pattern.exec(decoded))) {
+    var url = match[0].replace(/[),;]+$/, "");
     if (!seen[url]) { seen[url] = true; found.push({ name: "AVMirror / " + label, title: "Stream direto", url: url, quality: "Auto", headers: { Referer: pageUrl, "User-Agent": UA } }); }
   }
   return found.slice(0, 10);
 }
-
+function extractPlayers(html, pageUrl) {
+  var found = [], seen = {};
+  var decoded = String(html || "").replace(/\\u002f/gi, "/").replace(/\\\//g, "/").replace(/&amp;/gi, "&");
+  var pattern = /<(?:iframe|embed)[^>]+src=["']([^"']+)["']/gi;
+  var match;
+  while ((match = pattern.exec(decoded))) {
+    try {
+      var url = new URL(match[1], pageUrl).href;
+      if (!seen[url] && /^https?:/i.test(url)) { seen[url] = true; found.push(url); }
+    } catch (_) {}
+  }
+  return found.slice(0, 4);
+}
 function genericStreams(id, prefix, label) {
   var pageUrl = encodedUrl(id, prefix);
   if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return Promise.resolve([]);
   return request(pageUrl, { headers: { Referer: pageUrl } }).then(function (html) {
-    return extractDirectStreams(html, pageUrl, label);
+    var direct = extractDirectStreams(html, pageUrl, label);
+    if (direct.length) return direct;
+    return Promise.all(extractPlayers(html, pageUrl).map(function (player) {
+      return request(player, { headers: { Referer: pageUrl } }).then(function (playerHtml) {
+        return extractDirectStreams(playerHtml, player, label);
+      }).catch(function () { return []; });
+    })).then(function (results) {
+      var seen = {};
+      return [].concat.apply([], results).filter(function (stream) { if (seen[stream.url]) return false; seen[stream.url] = true; return true; }).slice(0, 10);
+    });
   }).catch(function (error) { console.log("AVMirror " + label + ": " + error.message); return []; });
 }
 
