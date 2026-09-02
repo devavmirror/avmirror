@@ -50,7 +50,8 @@ const JAV_GENRES = [
 ];
 const manifest = {
   id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
-  version: "26.1",
+  // Stremio exige SemVer completo internamente; a versão pública do produto é 26.1.
+  version: "26.1.0",
   name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
   description: LOCAL_MODE
@@ -397,9 +398,14 @@ app.disable("x-powered-by");
 // Health and installation UI must be registered before the Stremio router.
 app.get("/health", (_req, res) => res.status(200).json({ ok: true, name: "AVMirror", version: manifest.version }));
 app.get("/api/local-info", (req, res) => {
+  if (!LOCAL_MODE) {
+    const onlineHost = new URL(PUBLIC_BASE_URL).host;
+    res.json({ host: onlineHost, port: new URL(PUBLIC_BASE_URL).port || 443, baseUrl: PUBLIC_BASE_URL, manifestUrl: `${PUBLIC_BASE_URL}/manifest.json`, stremioUrl: `stremio://${onlineHost}/manifest.json`, localMode: false, directStreams: true, hlsProxy: false });
+    return;
+  }
   const host = req.hostname && req.hostname !== "localhost" && req.hostname !== "127.0.0.1" ? req.hostname : getLocalIPv4();
   const base = `http://${host}:${PORT}`;
-  res.json({ host, port: PORT, baseUrl: base, manifestUrl: `${base}/manifest.json`, stremioUrl: `stremio://${host}:${PORT}/manifest.json`, localMode: LOCAL_MODE, directStreams: !(LOCAL_MODE && USE_LOCAL_HLS_PROXY), hlsProxy: LOCAL_MODE && USE_LOCAL_HLS_PROXY });
+  res.json({ host, port: PORT, baseUrl: base, manifestUrl: `${base}/manifest.json`, stremioUrl: `stremio://${host}:${PORT}/manifest.json`, localMode: true, directStreams: !USE_LOCAL_HLS_PROXY, hlsProxy: USE_LOCAL_HLS_PROXY });
 });
 app.get("/install", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));
 const staticAssetOptions = { maxAge: "7d", immutable: true };
