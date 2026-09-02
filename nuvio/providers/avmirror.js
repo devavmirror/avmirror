@@ -1,4 +1,4 @@
-var UA = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";
+var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139.0.0.0 Safari/537.36";
 var AV01 = "https://www.av01.media";
 function playbackHeaders(referer) {
   var headers = { Referer: referer, "User-Agent": UA };
@@ -35,7 +35,8 @@ function av01Streams(id) {
       var access = JSON.parse(accessText);
       if (!access || !access.access_token) return [];
       var token = "?access_token=" + encodeURIComponent(access.access_token);
-      return [{ name: "AVMirror / AV01", title: "AV01 • direto", url: AV01 + "/api/v1/videos/" + videoId + "/manifest/master.m3u8" + token, quality: "Auto", behaviorHints: { notWebReady: false, bingeGroup: "av01" }, headers: playbackHeaders(AV01 + "/") }];
+      var headers = playbackHeaders(AV01 + "/");
+      return [{ name: "AVMirror / AV01", title: "AV01 • direto", url: AV01 + "/api/v1/videos/" + videoId + "/manifest/master.m3u8" + token, quality: "Auto", behaviorHints: { notWebReady: false, bingeGroup: "av01", proxyHeaders: { request: headers } }, headers: headers }];
     })
     .catch(function (error) { console.log("AVMirror AV01: " + error.message); return []; });
 }
@@ -81,7 +82,8 @@ function extractDirectStreams(html, pageUrl, label) {
     var url = normalizeUrl(value, pageUrl);
     if (!url || !isMediaUrl(url) || seen[url]) return;
     seen[url] = true;
-    found.push({ name: "AVMirror / " + label, title: "Stream direto", url: url, quality: "Auto", headers: playbackHeaders(pageUrl) });
+    var headers = playbackHeaders(pageUrl);
+    found.push({ name: "AVMirror / " + label, title: "Stream direto", url: url, quality: "Auto", headers: headers, behaviorHints: { notWebReady: false, proxyHeaders: { request: headers } } });
   };
   var match;
   var urlPattern = /(?:https?:)?[/][/][^"'<> \t\r\n]+/g;

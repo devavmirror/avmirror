@@ -18,6 +18,7 @@ test("Nuvio provider follows player iframe and returns direct HLS URL", async ()
     const streams = await provider.getStreams(id("avmirror:", page), "movie");
     assert.equal(streams[0].url, media);
     assert.equal(streams[0].headers.Referer, player);
+    assert.equal(streams[0].behaviorHints.proxyHeaders.request.Referer, player);
   } finally { global.fetch = originalFetch; }
 });
 
@@ -48,5 +49,6 @@ test("Nuvio provider follows nested arbitrary iframes and data-file media", asyn
     assert.equal(streams.length, 1);
     assert.equal(streams[0].url, media);
     assert.equal(streams[0].headers.Referer, nested);
+    assert.equal(streams[0].behaviorHints.proxyHeaders.request.Referer, nested);
   } finally { global.fetch = originalFetch; }
 });
