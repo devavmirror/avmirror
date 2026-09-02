@@ -117,7 +117,28 @@ function cacheCatalogPath(sourceId, page, extra) {
 
 function cacheMetaPath(id) { return `meta/${encodeURIComponent(String(id || ""))}.json`; }
 
-function proxyMediaUrl(raw) { return `${PUBLIC_BASE_URL}/hls?url=${encodeURIComponent(raw)}`; }
+// Path-based media URLs keep the real file extension (.m3u8/.ts/.mp4) in the
+// pathname. Extracting the media behind the proxy this way is required by
+// strict HLS players (ffmpeg/libav, used by the Stremio desktop client), which
+// reject playlist/segment URLs whose pathname lacks a known extension (the old
+// query-based "/hls?url=" form) and stall forever on a blank screen.
+const MEDIA_EXT = /\.(m3u8|m4s|ts|mp4|m4v|webm|aac|mp3|m3u|txt)(?:[?#]|$)/i;
+function mediaProxyId(raw) {
+  const hostExt = String(raw.split("?")[0].match(MEDIA_EXT)?.[1] || "ts");
+  return `${Buffer.from(raw, "utf8").toString("base64url")}.${hostExt}`;
+}
+function decodeMediaProxyId(file) {
+  const ext = String(file || "").match(/\.(m3u8|m4s|ts|mp4|m4v|webm|aac|mp3|m3u|txt)$/i)?.[1] || "";
+  const b64 = String(file || "").replace(/\.[a-z0-9]+$/i, "");
+  if (!b64) return null;
+  try {
+    const decoded = Buffer.from(b64, "base64url").toString("utf8");
+    return /^https?:/i.test(decoded) ? decoded : null;
+  } catch { return null; }
+}
+function proxyMediaUrl(raw) {
+  return `${PUBLIC_BASE_URL}/hls/${encodeURIComponent(mediaProxyId(raw))}`;
+}
 function isAllowedMediaUrl(raw) {
   try {
     const u = new URL(raw);
@@ -220,12 +241,16 @@ function isInternalVideoProxyUrl(rawUrl) {
       || Boolean(publicHost && url.hostname === publicHost && /^\/hls(?:\/|$)/i.test(url.pathname));
   } catch { return false; }
 }
-function proxiedStreams(streams) {
+function proxiedStreams(streams, forceLocalProxy) {
   return streams
     .filter(stream => stream && (stream.url || stream.externalUrl) && (!stream.url || LOCAL_MODE || !isInternalVideoProxyUrl(stream.url)))
     .map(stream => {
       if (!stream.url || stream.externalUrl) return stream;
-      if (LOCAL_MODE && USE_LOCAL_HLS_PROXY) {
+      // Per-device: proxy delivery is only used for clients that ignore the
+      // proxyHeaders contract (Android/TV). Clients that repass headers get the
+      // source URL directly so each device resolves playback independently.
+      const useProxy = LOCAL_MODE && USE_LOCAL_HLS_PROXY && forceLocalProxy;
+      if (useProxy) {
         return { ...stream, url: proxyMediaUrl(stream.url), behaviorHints: stream.behaviorHints || {} };
       }
       // Render never retransmits video; remote deployments deliver the source URL.
@@ -401,20 +426,20 @@ builder.defineMetaHandler(async ({ id }) => {
   }
 });
 
-builder.defineStreamHandler(async ({ type, id }) => {
-  if (type !== "movie") return { streams: [] };
-  try {
-    return {
-      streams: [supportStream(), ...proxiedStreams(String(id || "").startsWith("av01:") ? await scrapeAv01Streams(id) : String(id || "").startsWith("javrider:") ? await scrapeJavRiderStreams(id) : await scrapeStreams(id))],
-      cacheMaxAge: 120,
-      staleRevalidate: 300,
-      staleError: 600
-    };
-  } catch (e) {
-    console.error("stream:", e);
-    return { streams: [] };
-  }
-});
+async function resolveStreams(id) {
+  return String(id || "").startsWith("av01:") ? await scrapeAv01Streams(id) : String(id || "").startsWith("javrider:") ? await scrapeJavRiderStreams(id) : await scrapeStreams(id);
+}
+
+// Which Stremio clients re-enforce the proxyHeaders contract on direct playback.
+// Desktop and iOS repass Referer/Origin/User-Agent; Android and TV boxes tend to
+// ignore them, so they must fall back to the local HLS proxy to keep working.
+function deviceNeedsProxy(userAgent) {
+  if (!userAgent) return true;
+  const ua = String(userAgent).toLowerCase();
+  if (/android|tv|glass|smarthub/i.test(ua)) return true;
+  if (/iphone|ipad|ipod|mac os|windows|linux|x11|darwin/i.test(ua)) return false;
+  return true;
+}
 
 const app = express();
 app.disable("x-powered-by");
@@ -466,9 +491,8 @@ app.options("/hls", (_req, res) => res.status(204)
   .set("Access-Control-Allow-Headers", "Range, Content-Type")
   .set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges")
   .end());
-app.all("/hls", async (req, res) => {
+async function handleMediaRequest(req, res, rawUrl) {
   if (req.method !== "GET" && req.method !== "HEAD") return res.status(405).set("Allow", "GET, HEAD, OPTIONS").end();
-  let rawUrl = String(req.query.url || "");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), MEDIA_TIMEOUT_MS);
   try {
@@ -534,8 +558,41 @@ app.all("/hls", async (req, res) => {
   } finally {
     clearTimeout(timer);
   }
+}
+// Legacy query-based proxy (kept for backward compatibility).
+app.all("/hls", (req, res) => handleMediaRequest(req, res, String(req.query.url || "")));
+// Path-based proxy. The :file segment carries the base64url media URL plus the
+// real extension (e.g. "...base64.m3u8") so strict HLS players recognize it.
+app.get("/hls/:file", (req, res) => {
+  const rawUrl = decodeMediaProxyId(req.params.file);
+  return rawUrl ? handleMediaRequest(req, res, rawUrl) : res.status(400).json({ error: "invalid media id" });
 });
 app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));
+
+// Stream resource served manually (before the SDK router) so we can inspect
+// the requesting client's User-Agent and choose direct vs. local-proxy delivery
+// per device. The SDK router never exposes request headers to its handlers.
+app.get("/stream/movie/:id.json", async (req, res) => {
+  try {
+    const needsProxy = deviceNeedsProxy(req.headers["user-agent"]);
+    const streams = await resolveStreams(req.params.id);
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Cache-Control", "max-age=120, stale-while-revalidate=300, stale-if-error=600, public");
+    res.json({ streams: [supportStream(), ...proxiedStreams(streams, needsProxy)] });
+  } catch (e) {
+    console.error("stream:", e);
+    res.json({ streams: [] });
+  }
+});
+// Fallback for any other stream resource shape the manual route above misses.
+builder.defineStreamHandler(async ({ id }) => {
+  try {
+    return { streams: [supportStream(), ...proxiedStreams(await resolveStreams(id), !LOCAL_MODE)] };
+  } catch (e) {
+    console.error("stream:", e);
+    return { streams: [] };
+  }
+});
 
 // Official SDK exposes the addon protocol as an Express-compatible router.
 // This makes /manifest.json, /catalog/..., /meta/... and /stream/... available.
