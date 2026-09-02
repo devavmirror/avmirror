@@ -233,7 +233,7 @@ async function getBrowser() {
     const appDir = process.pkg ? path.dirname(process.execPath) : path.resolve(__dirname, "..");
     const bundledCandidates = process.platform === "win32"
       ? fs.globSync(path.join(appDir, "chromium", "**", "chrome.exe"))
-      : [...fs.globSync(path.join(appDir, "chromium", "**", "headless_shell")), ...fs.globSync(path.join(appDir, "chromium", "**", "chrome"))];
+      : fs.globSync(path.join(appDir, "chromium", "**", "chrome"));
     const candidates = [configuredPath, bundledCandidates[0], "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/snap/bin/chromium"].filter(Boolean);
     const executablePath = candidates.find(fs.existsSync);
     browserPromise = chromium.launch({
