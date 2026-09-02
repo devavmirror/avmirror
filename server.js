@@ -370,7 +370,7 @@ app.get("/health", (_req, res) => res.status(200).json({ ok: true, name: "AVMirr
 app.get("/api/local-info", (req, res) => {
   const host = req.hostname && req.hostname !== "localhost" && req.hostname !== "127.0.0.1" ? req.hostname : getLocalIPv4();
   const base = `http://${host}:${PORT}`;
-  res.json({ host, port: PORT, baseUrl: base, manifestUrl: `${base}/manifest.json`, stremioUrl: `stremio://${host}:${PORT}/manifest.json` });
+  res.json({ host, port: PORT, baseUrl: base, manifestUrl: `${base}/manifest.json`, stremioUrl: `stremio://${host}:${PORT}/manifest.json`, localMode: LOCAL_MODE, directStreams: !(LOCAL_MODE && USE_LOCAL_HLS_PROXY), hlsProxy: LOCAL_MODE && USE_LOCAL_HLS_PROXY });
 });
 app.get("/install", (_req, res) => res.sendFile(path.join(__dirname, "public", "install.html")));
 const staticAssetOptions = { maxAge: "7d", immutable: true };
