@@ -1,0 +1,26 @@
+node_modules
+.git
+.gitignore
+npm-debug.log*
+*.log
+dist
+coverage
+.cache
+.DS_Store
+android/.gradle
+android/app/build
+android/app/src/main/assets/nodejs-project
+.tmp
+.env
+.env.*
+!env.example
+
+# Artefatos locais e pacotes gerados
+*.deb
+*.zip
+*.exe
+screenshots
+
+# Cache pode ser enviado separadamente pelo workflow; não precisa entrar na imagem
+cache/*
+!cache/.gitkeep
