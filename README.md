@@ -2,7 +2,7 @@
 
 Addon para **Stremio e Nuvio**, acompanhado de um provider direto para Nuvio. O projeto organiza catálogos, metadados e fontes de reprodução para conteúdos que o usuário está autorizado a acessar.
 
-> **Versão atual: 26.1.0**
+> **Versão atual: 26.1**
 
 ## Visão geral
 

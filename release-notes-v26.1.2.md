@@ -1,4 +1,4 @@
-# AVMirror v26.1.2
+# AVMirror v26.1
 
 Esta versão adiciona launchers autoatualizáveis para Windows e Debian/Linux.
 

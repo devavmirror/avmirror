@@ -1,7 +1,7 @@
 
 ## Resultado da integração
 
-O Stremio Web reconheceu o manifesto público temporário do AVMirror e exibiu a confirmação com `AVMirror v.26.1.0`, descrição, tipos suportados e botão Install. Após a confirmação, o addon apareceu na lista de addons instalados.
+O Stremio Web reconheceu o manifesto público temporário do AVMirror e exibiu a confirmação com `AVMirror v.26.1`, descrição, tipos suportados e botão Install. Após a confirmação, o addon apareceu na lista de addons instalados.
 
 O Board/Discover do Stremio também carregou normalmente após a instalação. Os screenshots de referência devem registrar a lista de addons instalados, a confirmação do AVMirror e a interface principal do Stremio.
 
@@ -19,7 +19,7 @@ A nova captura foi feita somente depois de os cards exibirem os pôsteres e o pa
 
 ## Sequência refeita
 
-O primeiro print foi preparado com a busca `AVMirror`, ocultando visualmente os addons padrão protegidos. Após aguardar, o logo, nome, versão 26.1.0 e descrição do AVMirror estavam carregados e visíveis.
+O primeiro print foi preparado com a busca `AVMirror`, ocultando visualmente os addons padrão protegidos. Após aguardar, o logo, nome, versão 26.1 e descrição do AVMirror estavam carregados e visíveis.
 
 ## Prints finais refeitos
 

@@ -1,6 +1,6 @@
 {
   "name": "avmirror-stremio-addon",
-  "version": "26.1.0",
+  "version": "26.1",
   "private": true,
   "description": "AVMirror Stremio addon com servidor local LAN multiplataforma.",
   "type": "commonjs",

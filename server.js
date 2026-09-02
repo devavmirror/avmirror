@@ -50,7 +50,7 @@ const JAV_GENRES = [
 ];
 const manifest = {
   id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
-  version: "26.1.0",
+  version: "26.1",
   name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
   description: LOCAL_MODE
