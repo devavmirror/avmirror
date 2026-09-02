@@ -31,7 +31,7 @@ const MEDIA_HOSTS = /(^|\.)mushroomtrack\.com$/i;
 const manifest = {
   id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
   // Stremio exige SemVer completo internamente; a versão pública do produto é 26.1.
-  version: "26.1.1",
+  version: "26.1.2",
   name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
   description: LOCAL_MODE
@@ -151,7 +151,8 @@ function proxiedStreams(streams, forceLocalProxy) {
       const requestHeaders = behaviorHints.proxyHeaders?.request || {};
       const direct = { ...stream, title: `${stream.title || "Jable.TV"} • Direto`, headers: { ...(stream.headers || {}), ...requestHeaders }, behaviorHints };
       if (useProxy) {
-        const proxy = { ...stream, title: `${stream.title || "Jable.TV"} • Proxy local`, url: proxyMediaUrl(stream.url), behaviorHints: stream.behaviorHints || {} };
+        const { proxyHeaders: _ignoredProxyHeaders, ...proxyHints } = stream.behaviorHints || {};
+        const proxy = { ...stream, title: `${stream.title || "Jable.TV"} • Proxy local`, url: proxyMediaUrl(stream.url), behaviorHints: { ...proxyHints, notWebReady: false } };
         return [proxy, direct];
       }
       return [direct];

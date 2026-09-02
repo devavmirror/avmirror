@@ -335,7 +335,7 @@ function streamObject(url, pageUrl) {
     url,
     headers,
     behaviorHints: {
-      notWebReady: false,
+      notWebReady: true,
       bingeGroup: "jable",
       proxyHeaders: { request: headers }
     }
@@ -381,5 +381,6 @@ module.exports = {
   scrapeJableCatalog,
   scrapeJableMeta,
   scrapeJableStreams,
+  streamObject,
   closeJableBrowser
 };

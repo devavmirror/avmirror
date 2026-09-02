@@ -7,7 +7,8 @@ const {
   isJableVideoUrl,
   collectJableCatalog,
   parseJableMeta,
-  extractJableStreamUrls
+  extractJableStreamUrls,
+  streamObject
 } = require("../jable");
 
 test("Jable IDs round-trip only video pages from jable.tv", () => {
@@ -68,6 +69,14 @@ test("metadata parser extracts title, poster, cast, genres, runtime and date", (
   assert.deepEqual(meta.cast, ["Model A"]);
   assert.deepEqual(meta.genre, ["Uniform", "Nurse"]);
   assert.match(meta.poster, /preview\.jpg$/);
+});
+
+test("stream objects with headers satisfy the Stremio proxy contract", () => {
+  const url = "https://home-clone-clear.mushroomtrack.com/hls/token/1788385601/61000/61690/61690.m3u8";
+  const stream = streamObject(url, "https://jable.tv/videos/waaa-685/?lang=en");
+  assert.equal(stream.behaviorHints.notWebReady, true);
+  assert.equal(stream.behaviorHints.proxyHeaders.request.Referer, "https://jable.tv/videos/waaa-685/?lang=en");
+  assert.equal(stream.behaviorHints.proxyHeaders.request.Origin, "https://jable.tv");
 });
 
 test("stream parser prefers Jable HLS and ignores preview MP4 and ad URLs", () => {
