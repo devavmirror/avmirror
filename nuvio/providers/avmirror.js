@@ -21,7 +21,9 @@ function encodedUrl(id) {
     while (value.length % 4) value += "=";
     var url = decodeURIComponent(escape(atob(value)));
     var parsed = new URL(url);
-    return parsed.origin === JABLE && /^\/videos\/[^/?#]+\/?$/i.test(parsed.pathname) ? parsed.href : null;
+    if (parsed.origin !== JABLE || !/^\/videos\/[^/?#]+\/?$/i.test(parsed.pathname)) return null;
+    parsed.searchParams.set("lang", "en");
+    return parsed.href;
   } catch (_) { return null; }
 }
 

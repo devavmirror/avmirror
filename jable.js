@@ -4,6 +4,7 @@ const path = require("node:path");
 const cheerio = require("cheerio");
 
 const JABLE_BASE_URL = "https://jable.tv";
+const JABLE_LANGUAGE = String(process.env.JABLE_LANGUAGE || "en").toLowerCase();
 const JABLE_ASSET_HOST = "assets-cdn.jable.tv";
 const CACHE_TTL_MS = Number(process.env.JABLE_CACHE_TTL_MS || 300000);
 const META_CACHE_TTL_MS = Number(process.env.JABLE_META_CACHE_TTL_MS || 3600000);
@@ -52,16 +53,29 @@ function cacheSet(key, value) {
   return value;
 }
 
+function localizeJablePage(value) {
+  const url = new URL(value, JABLE_BASE_URL);
+  if (url.origin === JABLE_BASE_URL && JABLE_LANGUAGE) url.searchParams.set("lang", JABLE_LANGUAGE);
+  return url.href;
+}
+
 function makeJableId(url) {
   const canonical = abs(url);
-  return canonical ? `jable:${Buffer.from(canonical, "utf8").toString("base64url")}` : null;
+  if (!canonical) return null;
+  try {
+    const parsed = new URL(canonical);
+    const localized = parsed.origin === JABLE_BASE_URL && /^\/videos\/[^/?#]+\/?$/i.test(parsed.pathname)
+      ? localizeJablePage(canonical)
+      : canonical;
+    return `jable:${Buffer.from(localized, "utf8").toString("base64url")}`;
+  } catch { return null; }
 }
 
 function idToJableUrl(id) {
   if (typeof id !== "string" || !id.startsWith("jable:")) return null;
   try {
     const url = new URL(Buffer.from(id.slice(6), "base64url").toString("utf8"));
-    return url.origin === JABLE_BASE_URL && /^\/videos\/[^/?#]+\/?$/i.test(url.pathname) ? url.href : null;
+    return url.origin === JABLE_BASE_URL && /^\/videos\/[^/?#]+\/?$/i.test(url.pathname) ? localizeJablePage(url.href) : null;
   } catch { return null; }
 }
 
@@ -112,13 +126,16 @@ function tagSlug(value) {
 function catalogUrl({ page = 1, search = "", genre = "", mode = "jable" } = {}) {
   const number = Math.max(1, Math.floor(Number(page) || 1));
   const query = clean(search);
-  if (query) return `${JABLE_BASE_URL}/search/${encodeURIComponent(query)}/${number > 1 ? `${number}/` : ""}`;
-  if (genre) {
+  let route;
+  if (query) route = `/search/${encodeURIComponent(query)}/${number > 1 ? `${number}/` : ""}`;
+  else if (genre) {
     const slug = tagSlug(genre);
-    return `${JABLE_BASE_URL}/tags/${encodeURIComponent(slug)}/${number > 1 ? `${number}/` : ""}`;
+    route = `/tags/${encodeURIComponent(slug)}/${number > 1 ? `${number}/` : ""}`;
+  } else {
+    const section = mode === "jable-popular" ? "hot" : "latest-updates";
+    route = `/${section}/${number > 1 ? `${number}/` : ""}`;
   }
-  const section = mode === "jable-popular" ? "hot" : "latest-updates";
-  return `${JABLE_BASE_URL}/${section}/${number > 1 ? `${number}/` : ""}`;
+  return localizeJablePage(`${JABLE_BASE_URL}${route}`);
 }
 
 function cardFor($, anchor) {

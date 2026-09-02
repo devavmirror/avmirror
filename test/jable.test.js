@@ -14,20 +14,20 @@ test("Jable IDs round-trip only video pages from jable.tv", () => {
   const url = "https://jable.tv/videos/waaa-685/";
   const id = makeJableId(url);
   assert.match(id, /^jable:/);
-  assert.equal(idToJableUrl(id), url);
+  assert.equal(idToJableUrl(id), `${url}?lang=en`);
   assert.equal(idToJableUrl(makeJableId("https://example.com/videos/waaa-685/")), null);
   assert.equal(isJableVideoUrl(url), true);
   assert.equal(isJableVideoUrl("https://jable.tv/latest-updates/"), false);
 });
 
 test("catalogUrl uses local Jable routes for new, popular, search and tags", () => {
-  assert.equal(catalogUrl({ page: 1, mode: "jable" }), "https://jable.tv/latest-updates/");
-  assert.equal(catalogUrl({ page: 2, mode: "jable" }), "https://jable.tv/latest-updates/2/");
-  assert.equal(catalogUrl({ page: 1, mode: "jable-popular" }), "https://jable.tv/hot/");
-  assert.equal(catalogUrl({ page: 3, mode: "jable-popular" }), "https://jable.tv/hot/3/");
-  assert.equal(catalogUrl({ search: "waaa 685" }), "https://jable.tv/search/waaa%20685/");
-  assert.equal(catalogUrl({ page: 2, search: "waaa 685" }), "https://jable.tv/search/waaa%20685/2/");
-  assert.equal(catalogUrl({ genre: "Nurse" }), "https://jable.tv/tags/nurse/");
+  assert.equal(catalogUrl({ page: 1, mode: "jable" }), "https://jable.tv/latest-updates/?lang=en");
+  assert.equal(catalogUrl({ page: 2, mode: "jable" }), "https://jable.tv/latest-updates/2/?lang=en");
+  assert.equal(catalogUrl({ page: 1, mode: "jable-popular" }), "https://jable.tv/hot/?lang=en");
+  assert.equal(catalogUrl({ page: 3, mode: "jable-popular" }), "https://jable.tv/hot/3/?lang=en");
+  assert.equal(catalogUrl({ search: "waaa 685" }), "https://jable.tv/search/waaa%20685/?lang=en");
+  assert.equal(catalogUrl({ page: 2, search: "waaa 685" }), "https://jable.tv/search/waaa%20685/2/?lang=en");
+  assert.equal(catalogUrl({ genre: "Nurse" }), "https://jable.tv/tags/nurse/?lang=en");
 });
 
 test("catalog parser extracts one movie per video URL with poster and runtime", () => {

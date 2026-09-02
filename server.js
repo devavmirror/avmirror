@@ -31,7 +31,7 @@ const MEDIA_HOSTS = /(^|\.)mushroomtrack\.com$/i;
 const manifest = {
   id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
   // Stremio exige SemVer completo internamente; a versão pública do produto é 26.1.
-  version: "26.1.0",
+  version: "26.1.1",
   name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
   description: LOCAL_MODE
@@ -210,7 +210,7 @@ function isAllowedImageUrl(raw) {
   try {
     const url = new URL(raw);
     const jableImage = url.hostname === "assets-cdn.jable.tv" && (
-      /^\/contents\/videos_screenshots\/\d+\/\d+\/[^/]+\.(?:jpe?g|png|webp)$/i.test(url.pathname)
+      /^\/contents\/videos_screenshots\/\d+\/\d+\/(?:320x180\/1|[^/]+)\.(?:jpe?g|png|webp)$/i.test(url.pathname)
       || /^\/assets\/images\/(?:placeholder-md|logo|avatar)\.(?:jpe?g|png|svg)$/i.test(url.pathname)
     );
     return url.protocol === "https:" && IMAGE_HOSTS.has(url.hostname) && jableImage;
