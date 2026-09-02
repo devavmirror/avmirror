@@ -24,13 +24,28 @@ O servidor local é o modo principal para Stremio em Windows e Linux. Instale o 
 http://IP-DO-COMPUTADOR:7000/manifest.json
 ```
 
-O manifesto local aparece como **AVMirror Local** e usa o identificador técnico `com.avmirror.addon.local`. Streams diretos são usados por padrão; o proxy HLS local é somente um fallback explícito para fontes que exigem reescrita de playlist ou headers especiais.
+O manifesto local aparece como **AVMirror Local** e usa o identificador técnico `com.avmirror.addon.local`. O proxy HLS local é usado por padrão para que o Stremio Android consiga reproduzir manifests assinados, segmentos e fontes que exigem headers. Para forçar URLs diretas, defina `USE_LOCAL_HLS_PROXY=false`.
 
-Para ativar o fallback de proxy local:
+Para iniciar o servidor local com o proxy HLS — comportamento padrão:
 
 ```bash
-USE_LOCAL_HLS_PROXY=true
+LOCAL_MODE=true \
+BIND_HOST=0.0.0.0 \
+PORT=7000 \
+node server.js
 ```
+
+A configuração equivalente, explícita, é:
+
+```bash
+LOCAL_MODE=true \
+USE_LOCAL_HLS_PROXY=true \
+BIND_HOST=0.0.0.0 \
+PORT=7000 \
+node server.js
+```
+
+Para forçar URLs diretas no servidor local, use `USE_LOCAL_HLS_PROXY=false`.
 
 A página de configuração fica disponível em:
 
@@ -70,9 +85,9 @@ O provider exporta `getStreams(id, mediaType, season, episode)` e reconhece IDs 
 
 O plugin usa `fetch`, Promises e APIs JavaScript básicas. Ele não usa Node.js, Express, Playwright, filesystem ou credenciais. Fontes que exigem navegador completo, cookies persistentes ou reescrita contínua podem exigir o addon local com proxy.
 
-## 5. Proxy HLS local
+## 5. Proxy HLS local para Stremio Android
 
-Quando uma fonte não funciona diretamente no player, use o servidor local:
+Quando uma fonte não funciona diretamente no player, use o servidor local. O celular e o computador precisam estar na mesma rede Wi‑Fi; o proxy roda no computador e o Stremio acessa o manifesto pelo IP local:
 
 ```bash
 LOCAL_MODE=true \
@@ -88,7 +103,7 @@ Fluxo:
 Stremio/Nuvio → AVMirror Local → proxy HLS no PC → fonte original
 ```
 
-O servidor remoto não retransmite vídeo. A rota `/hls` fica desabilitada em deployments não locais.
+O servidor remoto não retransmite vídeo. A rota `/hls` é usada somente no modo local quando `USE_LOCAL_HLS_PROXY` está ativo — por padrão, quando `LOCAL_MODE=true`. O plugin Nuvio permanece separado e tenta resolver streams diretamente no próprio aparelho.
 
 ## 6. Cache GitHub e fallback do Render
 
@@ -155,7 +170,7 @@ O cliente e o computador servidor devem estar na mesma rede quando o manifesto l
 | `/stream/...` | Resolução de streams |
 | `/health` | Saúde do servidor |
 | `/api/local-info` | IP, modo e proxy ativos |
-| `/hls` | Proxy HLS somente no modo local |
+| `/hls` | Proxy HLS local para o Stremio Android |
 
 ## 11. Estrutura do projeto
 

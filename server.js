@@ -8,10 +8,10 @@ const { getLocalIPv4, getLocalBaseUrl } = require("./lib/network");
 
 const PORT = Number(process.env.PORT || 7000);
 const LOCAL_MODE = process.env.LOCAL_MODE === "1" || process.env.LOCAL_MODE === "true";
-// Direct source URLs are the default in every deployment. The local proxy is
-// an explicit compatibility fallback only, never a Render video relay.
+// Local Stremio uses the HLS proxy by default so Android clients can play
+// signed manifests and segments. Remote deployments never proxy video.
 const USE_LOCAL_HLS_PROXY = process.env.USE_LOCAL_HLS_PROXY == null
-  ? false
+  ? LOCAL_MODE
   : process.env.USE_LOCAL_HLS_PROXY === "1" || process.env.USE_LOCAL_HLS_PROXY === "true";
 const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
 const RENDER_HOST = process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : "";
