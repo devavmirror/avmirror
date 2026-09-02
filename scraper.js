@@ -15,6 +15,7 @@ const USER_AGENT = process.env.USER_AGENT || "Mozilla/5.0 (Windows NT 10.0; Win6
 const BLOCKED_HOSTS = /(^|\.)(?:mayzaent\.com|ruddy-pass\.com|godkc\.com|growcdnssedge\.com)$/i;
 const AD_HOSTS = /(^|\.)(?:doubleclick\.net|googlesyndication\.com|googleadservices\.com|adservice\.google\.com|popads\.net|popcash\.net|propellerads\.com|exoclick\.com|trafficjunky\.net|onclick\.com|adsterra\.com|juicyads\.com|hilltopads\.net|admaven\.com)$/i;
 const AD_URL_PARTS = /(?:\/ads?(?:[/?#]|$)|\/banner(?:s)?(?:[/?#]|$)|\/pop(?:under|up)?(?:[/?#]|$)|\/prebid(?:[/?#]|$)|\b(?:adserver|advert|advertisement|doubleclick|googlesyndication|tracking|tracker)\b)/i;
+const RECOVERABLE_NETWORK_ERROR = /HTTP 403|HTTP 429|aborted|timeout|fetch failed|ECONNRESET|ECONNREFUSED|ENETUNREACH|EHOSTUNREACH|SSL_ERROR/i;
 
 const cache = new Map();
 const pending = new Map();
@@ -403,7 +404,7 @@ async function resolveSearchoPlayer(searchoUrl) {
   try {
     html = await get(searchoUrl, `${BASE_URL}/`, PLAYER_TIMEOUT_MS);
   } catch (e) {
-    if (!/HTTP 403|HTTP 429|aborted|timeout/i.test(e.message)) throw e;
+    if (!RECOVERABLE_NETWORK_ERROR.test(e.message)) throw e;
     // Do not launch Chromium for a blocked player when browser capture is
     // disabled; this keeps the normal HTTP path responsive.
     if (!ENABLE_BROWSER_STREAMS) return null;
@@ -425,7 +426,7 @@ async function resolveSearchoPlayer(searchoUrl) {
   try {
     finalPage = await getFinal(realUrl, searchoUrl, PLAYER_TIMEOUT_MS);
   } catch (e) {
-    if (!/HTTP 403|HTTP 429|aborted|timeout/i.test(e.message)) throw e;
+    if (!RECOVERABLE_NETWORK_ERROR.test(e.message)) throw e;
     if (!ENABLE_BROWSER_STREAMS) return null;
     const browserPage = await getFinalInBrowser(realUrl, searchoUrl, PLAYER_TIMEOUT_MS);
     finalPage = browserPage;
@@ -556,8 +557,20 @@ async function scrapeStreams(id) {
   // stream buttons are clicked. Parse declared media/iframes first and avoid
   // the slow browser path unless explicitly enabled by the operator.
   try {
-    const sourceHtml = await get(pageUrl);
+    let sourceHtml;
+    let sourceBrowserMedia = [];
+    try {
+      sourceHtml = await get(pageUrl);
+    } catch (e) {
+      if (!ENABLE_BROWSER_STREAMS || !RECOVERABLE_NETWORK_ERROR.test(e.message)) throw e;
+      const browserPage = await getFinalInBrowser(pageUrl, `${BASE_URL}/`, PLAYER_TIMEOUT_MS);
+      sourceHtml = browserPage.html;
+      sourceBrowserMedia = browserPage.media || [];
+    }
     const fallback = collectFallbackStreams(sourceHtml, pageUrl);
+    for (const media of sourceBrowserMedia) {
+      if (isMediaUrl(media)) fallback.found.set(media, { url: media, source: "page-browser", referer: pageUrl });
+    }
     if (!fallback.found.size) {
       const candidates = extractSearchoUrls(sourceHtml, pageUrl).slice(0, 6);
       const resolvedPlayers = await mapWithConcurrency(candidates, 3, async source => {
