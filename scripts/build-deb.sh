@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/dist/deb"
 PKG="$OUT/avmirror-local"
-VERSION="${VERSION:-26.1.3}"
+VERSION="${VERSION:-26.1.4}"
 NODE_BIN="${NODE_BIN:-$(command -v node)}"
 rm -rf "$OUT"
 mkdir -p "$PKG/opt/avmirror/app" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromium" "$PKG/usr/bin" "$PKG/usr/share/applications" "$PKG/usr/share/icons/hicolor/256x256/apps" "$PKG/etc/systemd/system" "$PKG/DEBIAN"

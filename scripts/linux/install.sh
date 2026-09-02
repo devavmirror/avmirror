@@ -2,7 +2,7 @@
 set -euo pipefail
 ARTIFACT_URL="${AVMIRROR_LINUX_URL:-${1:-}}"
 if [ -z "$ARTIFACT_URL" ]; then
-  echo 'Uso: AVMIRROR_LINUX_URL=https://.../avmirror-linux_26.1.3_amd64.deb bash install.sh' >&2
+  echo 'Uso: AVMIRROR_LINUX_URL=https://.../avmirror-linux_26.1.4_amd64.deb bash install.sh' >&2
   exit 2
 fi
 if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi

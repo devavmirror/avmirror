@@ -31,7 +31,7 @@ const MEDIA_HOSTS = /(^|\.)mushroomtrack\.com$/i;
 const manifest = {
   id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
   // Stremio exige SemVer completo internamente; a versão pública do produto é 26.1.
-  version: "26.1.3",
+  version: "26.1.4",
   name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
   description: LOCAL_MODE
