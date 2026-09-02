@@ -27,8 +27,6 @@ public class AvmirrorService extends Service {
   @Override public void onCreate() {
     super.onCreate();
     startForeground(ID, notification());
-    try { webView = createHiddenWebView(); }
-    catch (RuntimeException error) { Log.e("AVMirrorWebView", "WebView indisponível; serviço continuará ativo", error); webView = null; }
   }
 
   private Notification notification() {
@@ -66,7 +64,14 @@ public class AvmirrorService extends Service {
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
     if (intent != null && ACTION_RESOLVE.equals(intent.getAction())) {
       String url = intent.getStringExtra(EXTRA_URL);
-      if (webView != null && url != null && url.startsWith("https://")) webView.loadUrl(url);
+      if (url != null && url.startsWith("https://")) {
+        try {
+          if (webView == null) webView = createHiddenWebView();
+          webView.loadUrl(url);
+        } catch (RuntimeException error) {
+          Log.e("AVMirrorWebView", "Não foi possível iniciar o WebView", error);
+        }
+      }
     }
     return START_STICKY;
   }
