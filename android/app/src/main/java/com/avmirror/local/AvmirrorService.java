@@ -27,13 +27,15 @@ public class AvmirrorService extends Service {
   @Override public void onCreate() {
     super.onCreate();
     startForeground(ID, notification());
-    webView = createHiddenWebView();
+    try { webView = createHiddenWebView(); }
+    catch (RuntimeException error) { Log.e("AVMirrorWebView", "WebView indisponível; serviço continuará ativo", error); webView = null; }
   }
 
   private Notification notification() {
     NotificationManager manager = getSystemService(NotificationManager.class);
     if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(new NotificationChannel(CHANNEL, "AVMirror", NotificationManager.IMPORTANCE_LOW));
-    return new Notification.Builder(this, CHANNEL).setContentTitle("AVMirror ativo")
+    Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, CHANNEL) : new Notification.Builder(this);
+    return builder.setContentTitle("AVMirror ativo")
       .setContentText("Servidor local e navegador embutido ativos")
       .setSmallIcon(android.R.drawable.ic_media_play).setOngoing(true).build();
   }
@@ -64,7 +66,7 @@ public class AvmirrorService extends Service {
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
     if (intent != null && ACTION_RESOLVE.equals(intent.getAction())) {
       String url = intent.getStringExtra(EXTRA_URL);
-      if (url != null && url.startsWith("https://")) webView.loadUrl(url);
+      if (webView != null && url != null && url.startsWith("https://")) webView.loadUrl(url);
     }
     return START_STICKY;
   }

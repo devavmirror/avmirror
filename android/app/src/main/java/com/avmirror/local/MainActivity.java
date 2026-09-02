@@ -13,8 +13,11 @@ public class MainActivity extends Activity {
     super.onCreate(state);
     LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(32, 48, 32, 32);
     TextView title = new TextView(this); title.setText("AVMirror"); title.setTextSize(28); box.addView(title);
-    WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-    String ip = Formatter.formatIpAddress(wifi.getConnectionInfo().getIpAddress());
+    String ip = "não disponível";
+    try {
+      WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+      if (wifi != null && wifi.getConnectionInfo() != null) ip = Formatter.formatIpAddress(wifi.getConnectionInfo().getIpAddress());
+    } catch (RuntimeException ignored) { }
     TextView status = new TextView(this); status.setText("Servidor LAN: ativo\nIP local: " + ip + "\nPorta: 7000"); status.setTextSize(18); box.addView(status);
     Button install = new Button(this); install.setText("Instalar no Stremio"); box.addView(install);
     install.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("stremio://127.0.0.1:7000/manifest.json"))));
