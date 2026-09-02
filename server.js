@@ -49,11 +49,13 @@ const JAV_GENRES = [
   "Slender", "Slut", "Solowork", "Squirting", "Titty fuck", "Toy", "Voyeur", "Voyeurism", "Widow"
 ];
 const manifest = {
-  id: "com.avmirror.addon",
+  id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
   version: "26.1.0",
-  name: "AVMirror",
+  name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
-  description: "Assistir JAV no Stremio e Nuvio — catálogo e reprodução de conteúdo autorizado.",
+  description: LOCAL_MODE
+    ? "AVMirror Local — catálogo e reprodução pelo servidor pessoal do usuário."
+    : "AVMirror — catálogo e reprodução de conteúdo autorizado.",
   resources: ["catalog", "meta", "stream"],
   types: ["movie"],
   idPrefixes: ["avmirror:", "av01:", "javrider:"],
