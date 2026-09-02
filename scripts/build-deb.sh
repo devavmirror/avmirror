@@ -6,7 +6,7 @@ PKG="$OUT/avmirror-local"
 VERSION="${VERSION:-26.1.0}"
 NODE_BIN="${NODE_BIN:-$(command -v node)}"
 rm -rf "$OUT"
-mkdir -p "$PKG/opt/avmirror/app" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromium" "$PKG/usr/bin" "$PKG/etc/systemd/system" "$PKG/DEBIAN"
+mkdir -p "$PKG/opt/avmirror/app" "$PKG/opt/avmirror/node" "$PKG/opt/avmirror/chromium" "$PKG/usr/bin" "$PKG/usr/share/applications" "$PKG/etc/systemd/system" "$PKG/DEBIAN"
 cp -a "$ROOT"/*.js "$ROOT"/lib "$ROOT"/public "$ROOT"/scripts "$ROOT"/package.json "$ROOT"/package-lock.json "$PKG/opt/avmirror/app/"
 [ -d "$ROOT/node_modules" ] && cp -a "$ROOT/node_modules" "$PKG/opt/avmirror/app/"
 cp -L "$NODE_BIN" "$PKG/opt/avmirror/node/node"
@@ -22,6 +22,7 @@ exec /opt/avmirror/node/node /opt/avmirror/app/scripts/auto-update.js
 EOF
 chmod 0755 "$PKG/usr/bin/avmirror-local"
 cp "$ROOT/packaging/systemd/avmirror.service" "$PKG/etc/systemd/system/avmirror.service"
+cp "$ROOT/packaging/avmirror.desktop" "$PKG/usr/share/applications/avmirror.desktop"
 cat > "$PKG/DEBIAN/control" <<EOF
 Package: avmirror-local
 Version: $VERSION

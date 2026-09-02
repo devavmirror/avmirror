@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=AVMirror Local
+Comment=Servidor local AVMirror para Stremio
+Exec=xdg-open http://127.0.0.1:7000/install
+Icon=applications-internet
+Terminal=false
+Categories=AudioVideo;Network;
+Keywords=Stremio;AVMirror;servidor;addon;

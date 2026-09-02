@@ -1,16 +1,17 @@
 [Unit]
-Description=AVMirror local Stremio addon
+Description=AVMirror local Stremio addon (autoatualizável)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/opt/avmirror/node/node /opt/avmirror/server.js
+ExecStart=/opt/avmirror/node/node /opt/avmirror/app/scripts/auto-update.js
 WorkingDirectory=/opt/avmirror
 Restart=on-failure
 Environment=LOCAL_MODE=true
 Environment=BIND_HOST=0.0.0.0
 Environment=PORT=7000
+Environment=AVMIRROR_ROOT=/opt/avmirror
 
 [Install]
 WantedBy=multi-user.target
