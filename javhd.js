@@ -1,4 +1,5 @@
 const cheerio = require("cheerio");
+const fs = require("fs");
 const { chromium } = require("playwright");
 
 const BASE_URL = "https://javhd.today";
@@ -33,7 +34,13 @@ async function get(url) {
   return cacheSet(`http:${url}`, await response.text());
 }
 async function getBrowser() {
-  if (!browserPromise) browserPromise = chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium", args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(error => { browserPromise = null; throw error; });
+  if (!browserPromise) {
+    const configuredPath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
+    const candidates = [configuredPath, process.env.CHROMIUM_PATH, "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/snap/bin/chromium", "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe", "C:\\Users\\Public\\Chrome\\chrome.exe"].filter(Boolean);
+    const executablePath = candidates.find(fs.existsSync);
+    if (configuredPath && !fs.existsSync(configuredPath)) console.warn(`PLAYWRIGHT_EXECUTABLE_PATH não existe; usando ${executablePath || "Chromium gerenciado pelo Playwright"}`);
+    browserPromise = chromium.launch({ ...(executablePath ? { executablePath } : {}), headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] }).catch(error => { browserPromise = null; throw error; });
+  }
   return browserPromise;
 }
 async function getContext() {
@@ -67,7 +74,17 @@ function parseMeta(html, url) {
 async function scrapeJavHdMeta(id) { const url = idToUrl(id); if (!url) return null; const key = `meta:${url}`, hit = cacheGet(key); if (hit) return hit; try { return cacheSet(key, parseMeta(await get(url), url)); } catch (error) { console.error("javhd meta:", error.message); return null; } }
 function decodeBase64(value) { try { return Buffer.from(String(value || ""), "base64").toString("utf8"); } catch { return ""; } }
 const TRUSTED_MEDIA_HOSTS = /(?:^|\.)stream\.javhdz\.today$|(?:^|\.)mycloudz\.cc$|(?:^|\.)cloudwish\.xyz$|(?:^|\.)turbovid\.vip$|(?:^|\.)dooood\.com$|(?:^|\.)streambeast\.upn\.one$|(?:^|\.)avgle\.com$|(?:^|\.)acek-cdn\.com$/i;
-function isMediaUrl(value) { try { const url = new URL(value); return url.protocol === "https:" && TRUSTED_MEDIA_HOSTS.test(url.hostname) && !AD_PATTERN.test(url.hostname + url.pathname + url.search) && /\.(?:m3u8|mp4)(?:[?#]|$)/i.test(value); } catch { return false; } }
+function isMediaUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || AD_PATTERN.test(url.hostname + url.pathname + url.search)) return false;
+    // HLS playlists (.m3u8 or .txt) or video segments (.ts / masked .woff2 / mp4)
+    return /\.(?:m3u8|txt|ts|m4s|mp4|woff2)(?:[?#]|$)/i.test(url.pathname + url.search);
+  } catch { return false; }
+}
+function isPlaylistUrl(value) {
+  try { return isMediaUrl(value) && /\.(?:m3u8|txt)(?:[?#]|$)/i.test(new URL(value).pathname); } catch { return false; }
+}
 async function captureServer(serverUrl, pageUrl) {
   const context = await getContext(), page = await context.newPage(), media = new Set();
   await page.route("**/*", async route => { try { const u = new URL(route.request().url()); if (AD_PATTERN.test(u.hostname + u.pathname + u.search)) return route.abort(); } catch {} return route.continue(); });
@@ -90,7 +107,9 @@ async function captureServer(serverUrl, pageUrl) {
     for (const resource of resources) if (isMediaUrl(resource)) media.add(resource);
     const sources = await page.locator("video, source").evaluateAll(nodes => nodes.map(node => node.currentSrc || node.src || node.getAttribute("src")).filter(Boolean)).catch(() => []);
     for (const source of sources) if (isMediaUrl(source)) media.add(source);
-    return [...media].filter(isMediaUrl);
+    const playlists = [...media].filter(isPlaylistUrl);
+    const masters = playlists.filter(u => /\/master\.(?:m3u8|txt)(?:[?#]|$)/i.test(u));
+    return (masters.length ? masters : playlists);
   } finally { await page.close().catch(() => {}); }
 }
 async function scrapeJavHdStreams(id) {
@@ -101,7 +120,7 @@ async function scrapeJavHdStreams(id) {
     const embedHtml = await get(embed), embed$ = cheerio.load(embedHtml), rawServers = embed$(".server-option[data-embed]").map((_, element) => ({ name: embed$(element).attr("data-name") || "", url: decodeBase64(embed$(element).attr("data-embed")) })).get().filter(server => /^https:\/\//i.test(server.url) && !/watch-full|download/i.test(server.url)), servers = [...rawServers.filter(server => /mycloudz|cloudwish|turbovid|avgle/i.test(server.name + server.url)), ...rawServers].filter((server, index, list) => list.findIndex(item => item.url === server.url) === index).map(server => server.url);
     const media = new Set();
     for (const server of servers.slice(0, 3)) for (const candidate of await captureServer(server, embed)) if (!AD_PATTERN.test(candidate) && isMediaUrl(candidate)) media.add(candidate);
-    const streams = [...media].slice(0, 10).map((mediaUrl, index) => ({ name: "AVMirror", title: `JavHD • ${/\.m3u8/i.test(mediaUrl) ? "HLS" : "MP4"}${index ? ` ${index + 1}` : ""}`, url: mediaUrl, behaviorHints: /\.m3u8/i.test(mediaUrl) ? { notWebReady: false, bingeGroup: "javhd" } : {} }));
+    const streams = [...media].slice(0, 10).map((mediaUrl, index) => { const isHls = /\.(?:m3u8|txt)(?:[?#]|$)/i.test(mediaUrl); return { name: "AVMirror", title: `JavHD • ${isHls ? "HLS" : "MP4"}${index ? ` ${index + 1}` : ""}`, url: mediaUrl, behaviorHints: isHls ? { notWebReady: false, bingeGroup: "javhd" } : {} }; });
     return streams.length ? cacheSet(key, streams) : [];
   } catch (error) { console.error("javhd streams:", error.message); return []; }
 }

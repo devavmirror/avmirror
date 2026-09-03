@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const BASE_URL = (process.env.BASE_URL || "https://jav.guru").replace(/\/+$/, "");
 const CACHE_TTL_MS = Number(process.env.CACHE_TTL_MS || 900000);
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 12000);
-const PLAYER_TIMEOUT_MS = Number(process.env.PLAYER_TIMEOUT_MS || 10000);
+const PLAYER_TIMEOUT_MS = Number(process.env.PLAYER_TIMEOUT_MS || 25000);
 const CACHE_MAX_ENTRIES = Number(process.env.CACHE_MAX_ENTRIES || 500);
 const HEADLESS = String(process.env.BROWSER_HEADLESS || "true") !== "false";
 const ENABLE_BROWSER_STREAMS = String(process.env.ENABLE_BROWSER_STREAMS || "true").toLowerCase() === "true";
@@ -376,7 +376,21 @@ async function resolveSearchoPlayer(searchoUrl) {
   const rtype = html.match(/rtype:\s*'([^']+)'/)?.[1];
   const keys = html.match(/keys:\s*\[([^\]]+)\]/)?.[1]?.match(/'([^']+)'/g)?.map(x => x.slice(1, -1));
   const box = cid ? $(`#${cid}`).first() : null;
-  if (!cid || !base || !rtype || !box?.length || !keys?.length) return null;
+  if (!cid || !base || !rtype || !box?.length || !keys?.length) {
+    const directInline = [...html.matchAll(/https?:[^"'\\s<>]+\.m3u8(?:\?[^"'\\s<>]*)?/gi)].map(x => x[0]);
+    const eMatch = html.match(/(?:MIRROR|embed_src)\s*=\s*['"]?(https?:\/\/[^'"\s<>]+\/e\/[^'"\s<>]+)/i)?.[1];
+    const directFile = directInline.find(x => !/test-videos\.co\.uk/i.test(x));
+    if (directFile) return { file: directFile, playerUrl: searchoUrl };
+    if (eMatch) {
+      try {
+        const parsed = new URL(eMatch);
+        const filecode = parsed.pathname.split("/").filter(Boolean).pop();
+        const api = await fetch(`${parsed.origin}/api/stream`, { method: "POST", headers: { "content-type": "application/json", "user-agent": USER_AGENT, "accept": "application/json", referer: eMatch }, body: JSON.stringify({ filecode, device: "android" }), signal: AbortSignal.timeout(PLAYER_TIMEOUT_MS) });
+        if (api.ok) { const url = (await api.json()).streaming_url; if (url) return { file: url, playerUrl: eMatch }; }
+      } catch {}
+    }
+    return null;
+  }
   const token = keys.map(k => box.attr(k) || "").join("");
   if (!token || keys.some(k => !box.attr(k))) return null;
   const realUrl = `${base}?${rtype}r=${[...token].reverse().join("")}`;
@@ -385,10 +399,32 @@ async function resolveSearchoPlayer(searchoUrl) {
     finalPage = await getFinal(realUrl, searchoUrl, PLAYER_TIMEOUT_MS);
   } catch (e) {
     if (!/HTTP 403|HTTP 429|aborted|timeout/i.test(e.message)) throw e;
+    try {
+      const ac = new AbortController();
+      const t = setTimeout(() => ac.abort(), PLAYER_TIMEOUT_MS);
+      const r = await fetch(realUrl, { signal: ac.signal, headers: { "user-agent": USER_AGENT, referer: searchoUrl, "accept": "text/html,application/xhtml+xml" } });
+      clearTimeout(t);
+      if (r.ok) {
+        const realHtml = await r.text();
+        const realInline = [...realHtml.matchAll(/https?:[^"'\\s<>]+\.m3u8(?:\?[^"'\\s<>]*)?/gi)].map(x => x[0]);
+        const realFile = realInline.find(x => !/test-videos\.co\.uk/i.test(x));
+        if (realFile) return { file: realFile, playerUrl: realUrl };
+        const eUrl = realHtml.match(/(?:MIRROR|embed_src)\s*=\s*['"]?(https?:\/\/[^'"\s<>]+\/e\/[^'"\s<>]+)/i)?.[1];
+        if (eUrl) {
+          try {
+            const parsed = new URL(eUrl);
+            const filecode = parsed.pathname.split("/").filter(Boolean).pop();
+            const api = await fetch(`${parsed.origin}/api/stream`, { method: "POST", headers: { "content-type": "application/json", "user-agent": USER_AGENT, "accept": "application/json", referer: eUrl }, body: JSON.stringify({ filecode, device: "android" }), signal: AbortSignal.timeout(PLAYER_TIMEOUT_MS) });
+            if (api.ok) { const url = (await api.json()).streaming_url; if (url) return { file: url, playerUrl: eUrl }; }
+          } catch {}
+        }
+      }
+    } catch {}
     if (!ENABLE_BROWSER_STREAMS) return null;
-    const browserPage = await getFinalInBrowser(realUrl, searchoUrl, PLAYER_TIMEOUT_MS);
-    finalPage = browserPage;
-    browserMedia = [...browserMedia, ...(browserPage.media || [])];
+    // Do not launch Chromium for 403/429 responses – these typically indicate
+    // anti-bot protection (Cloudflare, etc.) that the browser cannot bypass
+    // either, and the Chromium launch wastes significant memory.
+    return null;
   }
   const playerHtml = finalPage.html;
   const unpacked = unpackPlayerScript(playerHtml);
@@ -401,7 +437,7 @@ async function resolveSearchoPlayer(searchoUrl) {
       const parsed = new URL(finalPage.url);
       const filecode = parsed?.pathname.split("/").filter(Boolean).pop();
       if (parsed && filecode && /\/e\//i.test(parsed.pathname)) {
-        const api = await fetch(`${parsed.origin}/api/stream`, { method: "POST", headers: { "content-type": "application/json", "user-agent": USER_AGENT, referer: parsed.href }, body: JSON.stringify({ filecode, device: "android" }) });
+        const api = await fetch(`${parsed.origin}/api/stream`, { method: "POST", headers: { "content-type": "application/json", "user-agent": USER_AGENT, "accept": "application/json", referer: parsed.href }, body: JSON.stringify({ filecode, device: "android" }), signal: AbortSignal.timeout(PLAYER_TIMEOUT_MS) });
         if (api.ok) file = (await api.json()).streaming_url;
       }
     } catch (e) { console.error("player API:", e.message); }
@@ -429,7 +465,8 @@ async function resolveSearchoPlayer(searchoUrl) {
       const variantUrl = abs(variant, resolvedFile), variantText = await get(variantUrl, finalPage.url, PLAYER_TIMEOUT_MS);
       const segment = variantText.split(/\r?\n/).find(x => x.trim() && !x.trim().startsWith("#"));
       if (segment) {
-        const segmentResponse = await fetch(abs(segment, variantUrl), { headers: { "user-agent": USER_AGENT, referer: finalPage.url } });
+        const ac2 = new AbortController(), t2 = setTimeout(() => ac2.abort(), PLAYER_TIMEOUT_MS);
+        const segmentResponse = await fetch(abs(segment, variantUrl), { headers: { "user-agent": USER_AGENT, referer: finalPage.url }, signal: ac2.signal }); clearTimeout(t2);
         const segmentType = String(segmentResponse.headers.get("content-type") || "").toLowerCase();
         if (!segmentResponse.ok || /^(image\/|text\/|application\/json)/.test(segmentType)) return null;
       }

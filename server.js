@@ -1,20 +1,26 @@
 const { addonBuilder, getRouter } = require("stremio-addon-sdk");
 const { scrapeCatalog, scrapeMeta, scrapeStreams, closeBrowser } = require("./scraper");
 const { scrapeJavRiderCatalog, scrapeJavRiderMeta, scrapeJavRiderStreams, closeJavRiderBrowser, JAVRIDER_GENRES } = require("./javrider");
-const { scrapeAv01Catalog, scrapeAv01Meta, scrapeAv01Streams, AV01_GENRES } = require("./av01");
+const { scrapeJavHdCatalog, scrapeJavHdMeta, scrapeJavHdStreams, closeJavHdBrowser, JAVHD_GENRES } = require("./javhd");
 const express = require("express");
 const path = require("path");
 const { getLocalIPv4, getLocalBaseUrl } = require("./lib/network");
 
 const PORT = Number(process.env.PORT || 7000);
-const LOCAL_MODE = process.env.LOCAL_MODE === "1" || process.env.LOCAL_MODE === "true";
+const LOCAL_MODE = process.env.LOCAL_MODE == null
+  ? true
+  : process.env.LOCAL_MODE === "1" || process.env.LOCAL_MODE === "true";
 const USE_LOCAL_HLS_PROXY = process.env.USE_LOCAL_HLS_PROXY == null
   ? LOCAL_MODE
   : process.env.USE_LOCAL_HLS_PROXY === "1" || process.env.USE_LOCAL_HLS_PROXY === "true";
 const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
-const RENDER_HOST = process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : "";
-const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || (LOCAL_MODE ? getLocalBaseUrl(PORT) : process.env.RENDER_EXTERNAL_URL || RENDER_HOST || "https://avmirror.onrender.com")).replace(/\/+$/, "");
-const CACHE_MIRROR_URL = String(process.env.CACHE_MIRROR_URL || "https://raw.githubusercontent.com/devavmirror/avmirror/main/cache").replace(/\/+$/, "");
+// AVMirror is intentionally local-first. PUBLIC_BASE_URL is the local server
+// URL derived from the LAN address; there is no remote/Render fallback so all
+// catalog, meta and media traffic stays on the user's own machine or LAN.
+const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || getLocalBaseUrl(PORT)).replace(/\/+$/, "");
+// Cache mirror (GitHub/raw) is only consulted for remote deployments. In local
+// mode every request resolves through the local scraper, so keep it empty.
+const CACHE_MIRROR_URL = LOCAL_MODE ? "" : String(process.env.CACHE_MIRROR_URL || "https://raw.githubusercontent.com/devavmirror/avmirror/main/cache").replace(/\/+$/, "");
 const CACHE_MIRROR_TIMEOUT_MS = Number(process.env.CACHE_MIRROR_TIMEOUT_MS || 4000);
 const SOURCE_URL = new URL(process.env.BASE_URL || "https://jav.guru");
 const IMAGE_HOSTS = new Set([
@@ -22,9 +28,8 @@ const IMAGE_HOSTS = new Set([
   "cdn.javmiku.com",
   "cdn.javsts.com",
   "cdn.javnorth.com",
-  "static.av01.tv",
-  "static2.av01.tv",
-  "img1.iw01.xyz",
+  "javhd.today",
+  "www.javhd.today",
   "pics.pornfhd.com",
   "javrider.com",
   "javphotos.com"
@@ -38,7 +43,7 @@ const imageCache = new Map();
 const imagePending = new Map();
 let imageCacheBytes = 0;
 const mediaCookies = new Map();
-const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)s1q2105\.com$|(^|\.)cdn-centaurus\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)www\.av01\.media$|(^|\.)customers\.iw01\.xyz$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)stream\.javhdz\.today$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$/i;
+const MEDIA_HOSTS = /(^|\.)premilkyway\.com$|(^|\.)s1q2105\.com$|(^|\.)cdn-centaurus\.com$|(^|\.)solutiondocumentation\.site$|(^|\.)maxstream\.org$|(^|\.)turboviplay\.com$|(^|\.)turbosplayer\.com$|(^|\.)97bf1\.com$|(^|\.)tnmr\.org$|(^|\.)voe\.sx$|(^|\.)vide0\.net$|(^|\.)lh3\.googleusercontent\.com$|(^|\.)bkcdn\.net$|(^|\.)1024cdn\.sx$|(^|\.)savedvids\.com$|(^|\.)mycloudz\.cc$|(^|\.)avgle\.com$|(^|\.)stream\.javhdz\.today$|(^|\.)cloudwish\.xyz$|(^|\.)turbovid\.vip$|(^|\.)dooood\.com$|(^|\.)streambeast\.upn\.one$|(^|\.)acek-cdn\.com$|(^|\.)javplayers\.com$|(^|\.)akmicdn\.com$|(^|\.)professionalshirts\.shop$|(^|\.)platformresources\.site$|(^|\.)strategicplanning\.sbs$|(^|\.)mountainbrookstudios\.store$|(^|\.)auroralearningworld\.store$|(^|\.)blockchainecosystem\.space$/i;
 const JAV_GENRES = [
   "3P", "Amateur", "Back", "Beautiful Girl", "Big tits", "Blowjob", "Boobs fetish", "Cowgirl",
   "Creampie", "Cuckold", "Deep Throat", "Drama", "Drug", "Egg Vibrator", "Electric Massager",
@@ -50,7 +55,7 @@ const JAV_GENRES = [
 ];
 const manifest = {
   id: LOCAL_MODE ? "com.avmirror.addon.local" : "com.avmirror.addon",
-  version: "26.1",
+  version: "26.1.0",
   name: LOCAL_MODE ? "AVMirror Local" : "AVMirror",
   logo: `${PUBLIC_BASE_URL}/logo.png`,
   description: LOCAL_MODE
@@ -58,13 +63,13 @@ const manifest = {
     : "AVMirror — catálogo e reprodução de conteúdo autorizado.",
   resources: ["catalog", "meta", "stream"],
   types: ["movie"],
-  idPrefixes: ["avmirror:", "av01:", "javrider:"],
+  idPrefixes: ["avmirror:", "javhd:", "javrider:"],
   catalogs: [
     ["avmirror", "AVMirror — Jav.guru — Novos"],
     ["avmirror-popular", "AVMirror — Jav.guru — Populares"],
     ["avmirror-actors", "AVMirror — Jav.guru — Por atriz"],
-    ["av01", "AVMirror — AV01 — Novos"],
-    ["av01-popular", "AVMirror — AV01 — Populares"],
+    ["javhd", "AVMirror — JavHD — Novos"],
+    ["javhd-popular", "AVMirror — JavHD — Populares"],
     ["javrider", "AVMirror — JavRider — Novos"],
     ["javrider-popular", "AVMirror — JavRider — Populares"]
   ].map(([id, name]) => ({
@@ -74,7 +79,7 @@ const manifest = {
     extra: [
       { name: "search", isRequired: false },
       ...(id.startsWith("avmirror") ? [{ name: "genre", options: JAV_GENRES, isRequired: false }] : []),
-      ...(id.startsWith("av01") ? [{ name: "genre", options: AV01_GENRES, isRequired: false }] : []),
+      ...(id.startsWith("javhd") ? [{ name: "genre", options: JAVHD_GENRES, isRequired: false }] : []),
       ...(id.startsWith("javrider") ? [{ name: "genre", options: JAVRIDER_GENRES, isRequired: false }] : []),
       { name: "skip", isRequired: false }
     ]
@@ -115,16 +120,12 @@ function cacheCatalogPath(sourceId, page, extra) {
 function cacheMetaPath(id) { return `meta/${encodeURIComponent(String(id || ""))}.json`; }
 
 function proxyMediaUrl(raw) { return `${PUBLIC_BASE_URL}/hls?url=${encodeURIComponent(raw)}`; }
+const dynamicMediaHosts = new Set();
+function trustMediaHost(raw) { if (raw) { try { dynamicMediaHosts.add(new URL(raw).hostname); } catch {} } }
 function isAllowedMediaUrl(raw) {
   try {
     const u = new URL(raw);
-    if (u.protocol !== "https:" || !MEDIA_HOSTS.test(u.hostname)) return false;
-    if (u.hostname === "www.av01.media") {
-      return /^\/api\/v1\/videos\/\d+\/manifest\//i.test(u.pathname) && u.searchParams.has("access_token");
-    }
-    if (u.hostname === "customers.iw01.xyz") {
-      return /^\/fmp4\//i.test(u.pathname) && u.searchParams.has("access_token");
-    }
+    if (u.protocol !== "https:" || (!MEDIA_HOSTS.test(u.hostname) && !dynamicMediaHosts.has(u.hostname))) return false;
     if (u.hostname === "javplayers.com") {
       return /^\/(?:cdn\/hls|m3)\//i.test(u.pathname);
     }
@@ -135,34 +136,6 @@ function isAllowedMediaUrl(raw) {
     return true;
   } catch { return false; }
 }
-async function refreshAv01Manifest(raw) {
-  try {
-    const target = new URL(raw);
-    const videoId = target.pathname.match(/\/api\/v1\/videos\/(\d+)\/manifest\//i)?.[1];
-    if (!videoId || target.hostname !== "www.av01.media") return null;
-    const geoResponse = await fetch("https://files.iw01.xyz/edge/geo.js?json", { headers: { "user-agent": "Mozilla/5.0", accept: "application/json" } });
-    if (!geoResponse.ok) return null;
-    const geo = await geoResponse.json();
-    const params = new URLSearchParams({ token_v2: geo.token_v2, expires: geo.expires, ip: geo.ip });
-    const accessResponse = await fetch(`https://www.av01.media/api/v1/videos/${videoId}/cdn-access?${params}`, { headers: { "user-agent": "Mozilla/5.0", referer: "https://www.av01.media/", accept: "application/json" } });
-    if (!accessResponse.ok) return null;
-    const access = await accessResponse.json();
-    if (!access?.access_token) return null;
-    target.searchParams.set("access_token", access.access_token);
-    return target.href;
-  } catch { return null; }
-}
-function withAv01AccessToken(raw, sourceUrl) {
-  try {
-    const target = new URL(raw);
-    const source = new URL(sourceUrl);
-    const token = source.hostname === "www.av01.media" ? source.searchParams.get("access_token") : null;
-    if (token && (target.hostname === "www.av01.media" || target.hostname === "customers.iw01.xyz")) {
-      target.searchParams.set("access_token", token);
-    }
-    return target.href;
-  } catch { return raw; }
-}
 const DIRECT_STREAM_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139.0.0.0 Safari/537.36";
 function sourceReferer(rawUrl) {
   try {
@@ -172,7 +145,6 @@ function sourceReferer(rawUrl) {
     if (host.endsWith("turboviplay.com")) return "https://turbovidhls.com/";
     if (host.endsWith("97bf1.com")) return "https://vidara.to/";
     if (host.endsWith("tnmr.org")) return "https://streamhihi.com/";
-    if (host === "www.av01.media" || host === "customers.iw01.xyz") return "https://www.av01.media/";
     if (host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com")) return "https://javhd.name/";
     if (host.endsWith("premilkyway.com")) return "https://jav.guru/";
     return "https://javclan.com/";
@@ -202,6 +174,7 @@ function directBehaviorHints(rawUrl, behaviorHints = {}) {
   };
 }
 function proxiedStreams(streams) {
+  streams.forEach(stream => { if (stream && stream.url) trustMediaHost(stream.url); });
   return streams
     .filter(stream => stream && (stream.url || stream.externalUrl))
     .map(stream => {
@@ -226,7 +199,7 @@ function rewritePlaylist(text, sourceUrl) {
   let pendingVariantTags = [];
   const rewriteUri = value => {
     try {
-      const absoluteUrl = withAv01AccessToken(new URL(value, sourceUrl).href, sourceUrl);
+      const absoluteUrl = new URL(value, sourceUrl).href;
       return isAllowedMediaUrl(absoluteUrl) ? proxyMediaUrl(absoluteUrl) : "";
     } catch { return ""; }
   };
@@ -264,24 +237,15 @@ function rewritePlaylist(text, sourceUrl) {
 function isAllowedImageUrl(raw) {
   try {
     const url = new URL(raw);
-    const wordpressImage = /\/wp-content\/uploads\//i.test(url.pathname);
+    const wordpressImage = /\/wp-content\/uploads\//i.test(url.pathname) || url.hostname.endsWith("javhd.today");
     const javPhotosImage = url.hostname === "javphotos.com" && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
-    const av01Image = /^(?:static2?\.av01\.tv|img1\.iw01\.xyz)$/i.test(url.hostname)
-      && /^\/media\/videos\/tmb\/\d+\/1\.jpg\/format=(?:jpeg|webp)\/wlv=(?:320|480|800)$/i.test(url.pathname)
-      && url.searchParams.has("access_token");
     const bestJavImage = url.hostname === "pics.pornfhd.com" && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
-    return url.protocol === "https:" && IMAGE_HOSTS.has(url.hostname) && (wordpressImage || javPhotosImage || av01Image || bestJavImage);
+    return url.protocol === "https:" && IMAGE_HOSTS.has(url.hostname) && (wordpressImage || javPhotosImage || bestJavImage);
   } catch { return false; }
 }
 
 function imageCandidates(rawUrl) {
-  const parsed = new URL(rawUrl);
-  if (!/(?:static2?\.av01\.tv|img1\.iw01\.xyz)$/i.test(parsed.hostname)) return [rawUrl];
-  return ["static.av01.tv", "static2.av01.tv", "img1.iw01.xyz"].map(host => {
-    const copy = new URL(parsed.href);
-    copy.hostname = host;
-    return copy.href;
-  });
+  return [rawUrl];
 }
 async function fetchImageCandidate(rawUrl) {
   const ac = new AbortController();
@@ -294,7 +258,6 @@ async function fetchImageCandidate(rawUrl) {
       headers: {
         "user-agent": "Mozilla/5.0",
         accept: "image/avif,image/webp,image/jpeg,image/png,image/*;q=0.8",
-        ...(/(?:\.av01\.tv|\.iw01\.xyz)$/i.test(imageHost) ? { referer: "https://www.av01.media/" } : {}),
       }
     });
     if (!response.ok || !isAllowedImageUrl(response.url)) throw new Error(`image HTTP ${response.status}`);
@@ -339,10 +302,10 @@ builder.defineCatalogHandler(async ({ id, extra }) => {
     const sourceId = String(id || "");
     const cached = await readCacheMirror(cacheCatalogPath(sourceId, page, extra));
     if (cached && Array.isArray(cached.metas) && cached.metas.length) return { ...cached, metas: cached.metas.map(proxiedMeta), cacheMaxAge: 900, staleRevalidate: 3600, staleError: 21600 };
-    const isAv01 = sourceId.startsWith("av01");
+    const isJavHd = sourceId.startsWith("javhd");
     const isJavRider = sourceId.startsWith("javrider");
-    const metas = isAv01
-      ? await scrapeAv01Catalog({ page, search: extra?.search || "", genre: extra?.genre || "", mode: sourceId || "av01" })
+    const metas = isJavHd
+      ? await scrapeJavHdCatalog({ page, search: extra?.search || "", genre: extra?.genre || "", mode: sourceId || "javhd" })
       : isJavRider
           ? await scrapeJavRiderCatalog({ page, search: extra?.search || "", genre: extra?.genre || "", mode: sourceId || "javrider" })
           : await scrapeCatalog({ page, search: extra?.search || "", genre: extra?.genre || "", mode: sourceId || "avmirror" });
@@ -363,7 +326,7 @@ builder.defineMetaHandler(async ({ id }) => {
     const value = String(id || "");
     const cached = await readCacheMirror(cacheMetaPath(value));
     if (cached && cached.meta) return { ...cached, meta: proxiedMeta(cached.meta), cacheMaxAge: 3600, staleRevalidate: 7200, staleError: 21600 };
-    const meta = value.startsWith("av01:") ? await scrapeAv01Meta(id) : value.startsWith("javrider:") ? await scrapeJavRiderMeta(id) : await scrapeMeta(id);
+    const meta = value.startsWith("javhd:") ? await scrapeJavHdMeta(id) : value.startsWith("javrider:") ? await scrapeJavRiderMeta(id) : await scrapeMeta(id);
     return {
       meta: proxiedMeta(meta),
       cacheMaxAge: 3600,
@@ -380,7 +343,7 @@ builder.defineStreamHandler(async ({ type, id }) => {
   if (type !== "movie") return { streams: [] };
   try {
     return {
-      streams: [supportStream(), ...proxiedStreams(String(id || "").startsWith("av01:") ? await scrapeAv01Streams(id) : String(id || "").startsWith("javrider:") ? await scrapeJavRiderStreams(id) : await scrapeStreams(id))],
+      streams: [supportStream(), ...proxiedStreams(String(id || "").startsWith("javhd:") ? await scrapeJavHdStreams(id) : String(id || "").startsWith("javrider:") ? await scrapeJavRiderStreams(id) : await scrapeStreams(id))],
       cacheMaxAge: 120,
       staleRevalidate: 300,
       staleError: 600
@@ -449,19 +412,12 @@ app.all("/hls", async (req, res) => {
     }
     const host = new URL(rawUrl).hostname.toLowerCase();
     const luluCode = host.endsWith("tnmr.org") ? rawUrl.match(/\/([^/]+)_h\/master\.m3u8/i)?.[1] : null;
-    const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("premilkyway.com") || host.endsWith("s1q2105.com") || host.endsWith("cdn-centaurus.com") ? "https://jav.guru/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("av01.media") || host.endsWith("iw01.xyz") ? "https://www.av01.media/" : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
+    const referer = host.endsWith("javplayers.com") || host.endsWith("akmicdn.com") ? "https://javplayers.com/" : host.endsWith("premilkyway.com") || host.endsWith("s1q2105.com") || host.endsWith("cdn-centaurus.com") ? "https://jav.guru/" : host.endsWith("turboviplay.com") ? "https://turbovidhls.com/" : host.endsWith("97bf1.com") ? "https://vidara.to/" : host.endsWith("tnmr.org") ? `https://streamhihi.com/e/${luluCode || ""}` : host.endsWith("bkcdn.net") || host.endsWith("1024cdn.sx") || host.endsWith("savedvids.com") || host.endsWith("mycloudz.cc") || host.endsWith("avgle.com") || host.endsWith("javhdz.today") || host.endsWith("cloudwish.xyz") || host.endsWith("turbovid.vip") || host.endsWith("dooood.com") || host.endsWith("upn.one") || host.endsWith("acek-cdn.com") ? "https://javhd.name/" : "https://javclan.com/";
     const requestHeaders = { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36", referer, origin: new URL(referer).origin, accept: "*/*" };
     if (req.headers.range) requestHeaders.range = req.headers.range;
     if (mediaCookies.get(host)) requestHeaders.cookie = mediaCookies.get(host);
     let response = await fetch(rawUrl, { headers: requestHeaders, signal: controller.signal });
     rememberMediaCookies(response, host);
-    if (response.status === 403 && /(?:www\.av01\.media|customers\.iw01\.xyz)$/i.test(host)) {
-      const refreshed = await refreshAv01Manifest(rawUrl);
-      if (refreshed) {
-        rawUrl = refreshed;
-        response = await fetch(rawUrl, { headers: requestHeaders, signal: controller.signal });
-      }
-    }
     // LuluStream may require a short-lived cookie from the embed page.
     if (!response.ok && host.endsWith("tnmr.org") && luluCode) {
       const embed = await fetch(`https://streamhihi.com/e/${luluCode}`, { headers: { "user-agent": requestHeaders["user-agent"], referer: "https://jav.guru/", accept: "text/html,*/*" } });
@@ -519,6 +475,7 @@ const shutdown = async () => {
   try { await closeBrowser(); }
   finally {
     await closeJavRiderBrowser();
+    await closeJavHdBrowser();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 5000).unref();
   }
