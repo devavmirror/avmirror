@@ -2,6 +2,7 @@ const { addonBuilder, getRouter } = require("stremio-addon-sdk");
 const { unifiedCatalog, unifiedMeta, unifiedStreams, unifiedPopular, unifiedUncensored } = require("./lib/unified");
 const { readDiskCache, writeDiskCache, catalogPath: diskCatalogPath, metaPath: diskMetaPath } = require("./cache");
 const { startWorker } = require("./cache-worker");
+const { t, getLang } = require("./lib/i18n");
 const express = require("express");
 const path = require("path");
 const { getLocalIPv4, getLocalBaseUrl } = require("./lib/network");
@@ -270,7 +271,7 @@ function supportStream() {
   return {
     name: "Apoie o AVMirror",
     title: "Ajude a manter o addon",
-    externalUrl: `${PUBLIC_BASE_URL || ""}/install#apoie`
+    externalUrl: `${PUBLIC_BASE_URL || ""}/configure`
   };
 }
 function rewritePlaylist(text, sourceUrl) {
@@ -622,8 +623,31 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Dynamic manifest with language support ──────────────────────────────────
+function buildManifest(lang) {
+  const l = lang || 'pt';
+  return {
+    ...manifest,
+    name: LOCAL_MODE ? t(l, 'addon.name') : t(l, 'addon.namePublic'),
+    description: LOCAL_MODE ? t(l, 'addon.descriptionLocal') : t(l, 'addon.descriptionPublic'),
+    catalogs: [
+      { ...manifest.catalogs[0], name: t(l, 'catalogNames.recentes') },
+      { ...manifest.catalogs[1], name: t(l, 'catalogNames.populares') },
+      { ...manifest.catalogs[2], name: t(l, 'catalogNames.semCensura') }
+    ]
+  };
+}
+
+// Override /manifest.json with dynamic language support
+app.get('/manifest.json', (req, res) => {
+  const lang = getLang(req);
+  res.json(buildManifest(lang));
+});
+
+app.get("/configure", (_req, res) => res.sendFile(path.join(__dirname, "public", "configure.html")));
+
 // Official SDK exposes the addon protocol as an Express-compatible router.
-// This makes /manifest.json, /catalog/... /meta/... and /stream/... available.
+// This makes /catalog/... /meta/... and /stream/... available.
 app.use("/", rateLimit(RATE_LIMIT_MAX_GLOBAL), getRouter(builder.getInterface()));
 
 const cacheWorker = startWorker();

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="AVMirror — Configure language and install.">
+  <title>AVMirror — Configurar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{avpink:'#ff5398'}}}}</script>
+  <style>:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}body{background:#0a0a0a;color:#f5f5f5}.grid-bg{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:32px 32px}.glow{box-shadow:0 0 80px rgba(255,83,152,.12)}.lang-btn{transition:all .25s;border:2px solid rgba(255,255,255,.1)}.lang-btn:hover{border-color:#ff5398}.lang-btn.active{border-color:#ff5398;background:rgba(255,83,152,.1);box-shadow:0 0 20px rgba(255,83,152,.15)}.copy-btn{transition:all .2s}.copy-btn:hover{background:#ff5398;color:#000}</style>
+</head>
+<body class="min-h-screen grid-bg">
+  <header class="border-b border-white/10 bg-black/70"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-5"><a href="/configure" class="flex items-center gap-3 font-bold"><img src="/logo.png" alt="AVMirror" class="h-9 w-9 rounded object-cover" width="36" height="36"><span>AVMirror</span></a></div></header>
+  <main class="mx-auto max-w-4xl px-5 pb-16">
+
+    <section class="py-20 text-center sm:py-28">
+      <p class="mb-5 text-xs font-bold uppercase tracking-[.28em] text-avpink">Jav • Quality • Content</p>
+      <h1 class="text-5xl font-extrabold tracking-tight text-white sm:text-7xl" data-i18n="configure.title">Configurar AVMirror</h1>
+      <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-400" data-i18n="configure.subtitle">Escolha o idioma e instale o addon</p>
+    </section>
+
+    <section class="rounded border border-avpink/30 bg-black/60 p-6 glow sm:p-8">
+      <h2 class="text-xl font-bold" data-i18n="configure.language">Idioma</h2>
+      <div class="mt-6 flex flex-wrap justify-center gap-4">
+        <button id="btn-pt" class="lang-btn active flex items-center gap-3 rounded-xl px-8 py-5 text-left" data-lang="pt">
+          <span class="text-3xl">🇧🇷</span>
+          <div>
+            <div class="font-bold text-white">Português</div>
+            <div class="text-xs text-gray-400">Brasil</div>
+          </div>
+        </button>
+        <button id="btn-en" class="lang-btn flex items-center gap-3 rounded-xl px-8 py-5 text-left" data-lang="en">
+          <span class="text-3xl">🇺🇸</span>
+          <div>
+            <div class="font-bold text-white">English</div>
+            <div class="text-xs text-gray-400">United States</div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <section class="mt-6 rounded border border-white/10 bg-black/60 p-6 glow sm:p-8">
+      <h2 class="text-xl font-bold" data-i18n="configure.preview">Preview dos catálogos</h2>
+      <div class="mt-5 space-y-3" id="preview">
+        <div class="flex items-center gap-3 rounded border border-white/10 bg-[#111] px-4 py-3">
+          <span id="prev-1" class="text-lg">🌐 Recentes</span>
+        </div>
+        <div class="flex items-center gap-3 rounded border border-white/10 bg-[#111] px-4 py-3">
+          <span id="prev-2" class="text-lg">🔥 Populares</span>
+        </div>
+        <div class="flex items-center gap-3 rounded border border-white/10 bg-[#111] px-4 py-3">
+          <span id="prev-3" class="text-lg">🟣 Sem Censura</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-6 rounded border border-white/10 bg-black/60 p-6 glow sm:p-8">
+      <h2 class="text-xl font-bold">Stremio</h2>
+      <p class="mt-3 text-sm leading-6 text-gray-400" data-i18n="configure.stremioDesc">Copie o manifesto abaixo e adicione no Stremio.</p>
+      <div class="mt-5 rounded border border-white/10 bg-[#111] p-4">
+        <code id="manifest-url" class="block break-all text-xs text-gray-300"></code>
+        <button id="copy" type="button" class="copy-btn mt-3 rounded bg-white/10 px-3 py-2 text-xs font-bold" data-i18n="configure.copyManifest">Copiar manifesto</button>
+      </div>
+      <div class="mt-5">
+        <a id="install" href="#" class="inline-block rounded bg-avpink px-8 py-3.5 font-bold text-black transition hover:bg-white" data-i18n="configure.install">Instalar no Stremio</a>
+      </div>
+      <p id="copy-msg" class="mt-3 min-h-5 text-xs text-avpink" aria-live="polite"></p>
+    </section>
+
+    <section class="mt-6 rounded border border-white/10 bg-black/60 p-6 glow sm:p-8">
+      <h2 class="text-xl font-bold">Nuvio</h2>
+      <p class="mt-3 text-sm leading-6 text-gray-400" data-i18n="configure.nuvioDesc">Adicione o manifesto abaixo no Nuvio.</p>
+      <div class="mt-5 rounded border border-white/10 bg-[#111] p-4">
+        <code id="nuvio-url" class="block break-all text-xs text-gray-300"></code>
+        <button id="copy-nuvio" type="button" class="copy-btn mt-3 rounded bg-white/10 px-3 py-2 text-xs font-bold" data-i18n="configure.copyNuvio">Copiar manifesto Nuvio</button>
+      </div>
+    </section>
+
+    <footer class="mt-16 border-t border-white/10 py-10 text-center text-xs leading-6 text-gray-500">
+      <p>AVMirror 26.2</p>
+      <p class="mt-2"><a href="/install" class="text-gray-300 hover:text-avpink">Install</a> · <a href="https://github.com/devavmirror/avmirror" class="text-gray-300 hover:text-avpink">GitHub</a></p>
+    </footer>
+
+  </main>
+  <script>
+    const i18n = {
+      pt: {
+        "configure.title": "Configurar AVMirror",
+        "configure.subtitle": "Escolha o idioma e instale o addon",
+        "configure.language": "Idioma",
+        "configure.preview": "Preview dos catálogos",
+        "configure.stremioDesc": "Copie o manifesto abaixo e adicione no Stremio.",
+        "configure.copyManifest": "Copiar manifesto",
+        "configure.install": "Instalar no Stremio",
+        "configure.nuvioDesc": "Adicione o manifesto abaixo no Nuvio.",
+        "configure.copyNuvio": "Copiar manifesto Nuvio",
+        "catalogs": ["🌐 Recentes", "🔥 Populares", "🟣 Sem Censura"]
+      },
+      en: {
+        "configure.title": "Configure AVMirror",
+        "configure.subtitle": "Choose language and install the addon",
+        "configure.language": "Language",
+        "configure.preview": "Catalog preview",
+        "configure.stremioDesc": "Copy the manifest below and add it to Stremio.",
+        "configure.copyManifest": "Copy manifest",
+        "configure.install": "Install on Stremio",
+        "configure.nuvioDesc": "Add the manifest below to Nuvio.",
+        "configure.copyNuvio": "Copy Nuvio manifest",
+        "catalogs": ["🌐 Recent", "🔥 Popular", "🟣 Uncensored"]
+      }
+    };
+
+    let currentLang = 'pt';
+    const baseUrl = location.origin;
+
+    function applyLang(lang) {
+      currentLang = lang;
+      const dict = i18n[lang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) el.textContent = dict[key];
+      });
+      document.getElementById('prev-1').textContent = dict.catalogs[0];
+      document.getElementById('prev-2').textContent = dict.catalogs[1];
+      document.getElementById('prev-3').textContent = dict.catalogs[2];
+
+      const manifestUrl = baseUrl + '/manifest.json?lang=' + lang;
+      document.getElementById('manifest-url').textContent = manifestUrl;
+      document.getElementById('nuvio-url').textContent = manifestUrl;
+      document.getElementById('install').href = 'stremio://' + new URL(baseUrl).host + '/manifest.json?lang=' + lang;
+
+      document.getElementById('btn-pt').classList.toggle('active', lang === 'pt');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
+    }
+
+    document.getElementById('btn-pt').addEventListener('click', () => applyLang('pt'));
+    document.getElementById('btn-en').addEventListener('click', () => applyLang('en'));
+
+    const copyMsg = document.getElementById('copy-msg');
+    document.getElementById('copy').addEventListener('click', async () => {
+      const url = baseUrl + '/manifest.json?lang=' + currentLang;
+      try { await navigator.clipboard.writeText(url); copyMsg.textContent = currentLang === 'pt' ? 'Manifesto copiado.' : 'Manifest copied.'; } catch { copyMsg.textContent = url; }
+    });
+    document.getElementById('copy-nuvio').addEventListener('click', async () => {
+      const url = baseUrl + '/manifest.json?lang=' + currentLang;
+      try { await navigator.clipboard.writeText(url); copyMsg.textContent = currentLang === 'pt' ? 'Manifesto Nuvio copiado.' : 'Nuvio manifest copied.'; } catch { copyMsg.textContent = url; }
+    });
+
+    document.getElementById('install').addEventListener('click', async e => {
+      e.preventDefault();
+      const target = e.currentTarget.href;
+      e.currentTarget.textContent = currentLang === 'pt' ? 'Abrindo Stremio...' : 'Opening Stremio...';
+      try { await fetch('/health', { cache: 'no-store' }); } catch {} finally { window.location.assign(target); }
+    });
+
+    applyLang('pt');
+  </script>
+</body>
+</html>
