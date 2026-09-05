@@ -1,6 +1,5 @@
 /* AVMirror Nuvio provider: direct device-side resolution, no Render/Cloudflare proxy. */
 var UA = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";
-var AV01 = "https://www.av01.media";
 
 function request(url, options) {
   options = options || {};
@@ -9,28 +8,6 @@ function request(url, options) {
   headers["Accept"] = headers["Accept"] || "*/*";
   return fetch(url, { method: options.method || "GET", headers: headers, body: options.body })
     .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); });
-}
-
-function av01Id(id) {
-  var match = String(id || "").match(/^av01:(\d+)$/);
-  return match ? match[1] : null;
-}
-
-function av01Streams(id) {
-  var videoId = av01Id(id);
-  if (!videoId) return Promise.resolve([]);
-  return request("https://files.iw01.xyz/edge/geo.js?json", { headers: { Accept: "application/json", Referer: AV01 + "/" } })
-    .then(function (geoText) {
-      var geo = JSON.parse(geoText);
-      var params = new URLSearchParams({ token_v2: geo.token_v2, expires: geo.expires, ip: geo.ip });
-      return request(AV01 + "/api/v1/videos/" + videoId + "/cdn-access?" + params.toString(), { headers: { Accept: "application/json", Referer: AV01 + "/" } });
-    })
-    .then(function (accessText) {
-      var access = JSON.parse(accessText);
-      var token = access && access.access_token ? "?access_token=" + encodeURIComponent(access.access_token) : "";
-      return [{ name: "AVMirror / AV01", title: "AV01 • direto", url: AV01 + "/api/v1/videos/" + videoId + "/manifest/master.m3u8" + token, quality: "Auto", headers: { Referer: AV01 + "/", "User-Agent": UA } }];
-    })
-    .catch(function (error) { console.log("AVMirror AV01: " + error.message); return []; });
 }
 
 function encodedUrl(id, prefix) {
@@ -60,10 +37,10 @@ function genericStreams(id, prefix, label) {
 
 function getStreams(id, mediaType, season, episode) {
   if (mediaType && mediaType !== "movie") return Promise.resolve([]);
-  return av01Id(id)
-    ? av01Streams(id)
-    : genericStreams(id, "avmirror:", "AVMirror")
-      .then(function (streams) { return streams.length ? streams : genericStreams(id, "javrider:", "JavRider"); });
+  return genericStreams(id, "avmirror:", "AVMirror")
+    .then(function (streams) { return streams.length ? streams : genericStreams(id, "18jav:", "18Jav"); })
+    .then(function (streams) { return streams.length ? streams : genericStreams(id, "goodav17:", "GoodAV17"); })
+    .then(function (streams) { return streams.length ? streams : genericStreams(id, "avjoy:", "AVJoy"); });
 }
 
 module.exports = { getStreams: getStreams };

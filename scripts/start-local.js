@@ -3,7 +3,7 @@ const { platform } = require("node:process");
 const path = require("node:path");
 
 const port = process.env.PORT || "7000";
-const child = spawn(process.execPath, ["server.js"], {
+const child = spawn(process.execPath, ["src/server.js"], {
   cwd: path.resolve(__dirname, ".."),
   env: { ...process.env, LOCAL_MODE: "true", BIND_HOST: process.env.BIND_HOST || "0.0.0.0", PORT: port },
   stdio: "inherit"

@@ -1,6 +1,5 @@
-const { scrapeCatalog, scrapeMeta, scrapeStreams, closeBrowser } = require("../scraper");
-const { scrapeAv01Catalog, scrapeAv01Meta, scrapeAv01Streams } = require("../av01");
-const { scrapeJavRiderCatalog, scrapeJavRiderMeta, scrapeJavRiderStreams, closeJavRiderBrowser } = require("../javrider");
+const { scrapeCatalog, scrapeMeta, scrapeStreams, closeBrowser } = require("../src/scrapers/avmirror");
+const { scrape18JavCatalog, scrape18JavMeta, scrape18JavStreams, close18JavBrowser } = require("../src/scrapers/18jav");
 const fs = require("node:fs/promises");
 
 async function one(label, catalog, meta, streams, options) {
@@ -23,10 +22,9 @@ async function one(label, catalog, meta, streams, options) {
   const results = [];
   try {
     results.push(await one("AVMirror/Jav.guru", scrapeCatalog, scrapeMeta, scrapeStreams, { page: 1, search: "", genre: "", mode: "avmirror" }));
-    results.push(await one("AV01", scrapeAv01Catalog, scrapeAv01Meta, scrapeAv01Streams, { page: 1, search: "", genre: "", mode: "av01" }));
-    results.push(await one("JavRider", scrapeJavRiderCatalog, scrapeJavRiderMeta, scrapeJavRiderStreams, { page: 1, search: "", genre: "", mode: "javrider" }));
+    results.push(await one("18Jav", scrape18JavCatalog, scrape18JavMeta, scrape18JavStreams, { page: 1 }));
   } finally {
-    await Promise.allSettled([closeBrowser(), closeJavRiderBrowser()]);
+    await Promise.allSettled([closeBrowser(), close18JavBrowser()]);
   }
   await fs.writeFile("/tmp/avmirror-live-results.json", JSON.stringify(results, null, 2) + "\n");
   const passed = results.filter(r => r.catalog.ok && r.meta.ok && r.streams.ok).length;

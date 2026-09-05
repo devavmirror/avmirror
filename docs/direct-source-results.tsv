@@ -1,0 +1,4 @@
+catalog	stream_status	source_status	content_type	bytes	playlist
+avmirror	200	403	text/html; charset=utf-8	146	no
+avmirror-popular	200	403	text/html; charset=utf-8	146	no
+avmirror-actors	200	403	text/html; charset=utf-8	146	no

@@ -4,11 +4,12 @@
   "private": true,
   "description": "AVMirror Stremio addon com servidor local LAN multiplataforma.",
   "type": "commonjs",
-  "main": "src/server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node server.js",
     "start:local": "LOCAL_MODE=true BIND_HOST=0.0.0.0 node scripts/start-local.js",
-    "dev": "node --watch src/server.js",
+    "dev": "node --watch server.js",
+    "browser": "npx playwright install chromium",
     "test": "node --test",
     "cache:update": "node scripts/update-cache.js"
   },
@@ -18,6 +19,7 @@
   "dependencies": {
     "cheerio": "^1.1.2",
     "express": "^5.1.0",
+    "playwright": "1.55.1",
     "stremio-addon-sdk": "^1.6.10"
   },
   "devDependencies": {}

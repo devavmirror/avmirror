@@ -5,8 +5,8 @@ const path = require("path");
 const BASE = process.env.BASE_URL || "http://localhost:7000";
 const TIMEOUT = Number(process.env.TIMEOUT_MS || 60000);
 const GURU_COUNT = Number(process.env.GURU_COUNT || 20);
-const JAVHD_COUNT = Number(process.env.JAVHD_COUNT || 10);
-const JAVRIDER_COUNT = Number(process.env.JAVRIDER_COUNT || 10);
+const JAV18_COUNT = Number(process.env.JAV18_COUNT || 10);
+const JAVPOST_COUNT = Number(process.env.JAVPOST_COUNT || 10);
 
 const GURU_URLS = [
   "https://jav.guru/1046649/dldss-531-dahlia-s-shocking-transfer-goddess-jun-reincarnated-the-miraculous-venus-descends/",
@@ -31,33 +31,34 @@ const GURU_URLS = [
   "https://jav.guru/1046640/fns-252-i-want-you-to-kiss-me-then-go-deep-with-mixed-fluids-kashikawa-shizuku/",
 ];
 
-const JAVHD_URLS = [
-  "https://javhd.today/362188/english-sub-659-my-sleNDER-elegant-wife-was-seduced-and-impregnated-by-my-father-akari-hanazato/",
-  "https://javhd.today/362187/mosaic-dsjh-20-the-settlement-condition-was-a-full-body-licking-i-had-two-beautiful-women-lick-every-inch-of-my-body-because-i-couldnt-take-it-anymore/",
-  "https://javhd.today/362186/mist-529-right-in-the-middle-of-her-fertile-peroid-soapland-where-you-can-cum-inside-70-karin-kitagawa/",
-  "https://javhd.today/362185/fns-254-i-want-you-to-kiss-me-mixed-fluids-during-deep-kabegami-akari-hanazato/",
-  "https://javhd.today/362184/ssis-949-removal-of-condom-after-ejaculation-in-the-premium-body-of-a-beautiful-woman-who-cant-stop-wanting-to-fuck/",
-  "https://javhd.today/362183/ssis-930-i-was-unable-to-resist-the-charm-of-my-father-in-law-who-fucked-me-wildly-until-i-wet/",
-  "https://javhd.today/362182/midv-783-my-senpai-is-a-married-woman-who-is-eager-to-do-it-with-me-after-work/",
-  "https://javhd.today/362181/midv-775-i-couldnt-resist-the-temptation-of-my-friends-hot-wife/",
-  "https://javhd.today/362180/midv-770-woman-who-cant-help-it-even-if-i-reject-her/",
-  "https://javhd.today/362179/midv-765-after-3-years-of-marriage-her-husband-suddenly-decided-to-let-his-wife-sleep-with-another-man/",
+const JAVPOST_URLS = [
+  "https://www.javpost.net/SONE-022-Censored/",
+  "https://www.javpost.net/SONE-028-Censored/",
+  "https://www.javpost.net/DLDSS-005-Censored/",
+  "https://www.javpost.net/SSIS-949-Censored/",
+  "https://www.javpost.net/MIDV-783-Censored/",
+  "https://www.javpost.net/MIDV-775-Censored/",
+  "https://www.javpost.net/MIDV-770-Censored/",
+  "https://www.javpost.net/MIDV-765-Censored/",
+  "https://www.javpost.net/FNS-254-Censored/",
+  "https://www.javpost.net/MIST-529-Censored/",
 ];
 
-const JAVRIDER_URLS = [
-  "https://javrider.com/sone-022-english-subtitle-av-idol-floods-the-set-with-squirting-tidems-during-consensual-sadistic-climaxing/",
-  "https://javrider.com/sone-028-english-subtitle-teacher-forced-into-micro-bikini-than-gangbanged/",
-  "https://javrider.com/dldss-005-english-subtitle-some-wild-flash-es-orgasms-raw-with-squirting/",
-  "https://javrider.com/ssis-830-english-subtitle-stepsister-who-seduces-me-when-parents-are-out/",
-  "https://javrider.com/ssis-734-english-subtitle-my-personal-milk-pump-cum-dump/",
-  "https://javrider.com/ssis-899-english-subtitle-senpai-who-stays-late-at-work-gets-her-pussy-wet-after-hours/",
-  "https://javrider.com/same-117-english-subtitle-that-bastard-wrecks-my-ass-deep-grinding-hips/",
-  "https://javrider.com/sdmf-048-english-subtitle-my-sister-uses-me-as-her-personal-milk-pump-cum-dump/",
-  "https://javrider.com/roe-230-english-subtitle-daughters-sluts-bf-reduces-hot-mom-raw-fuck/",
-  "https://javrider.com/jul-967-english-subtitle-japanese-beauty-takes-hard-dick-in-cowgirl/",
+const JAV18_URLS = [
+  "https://18jav.tv/videos/hnd-765",
+  "https://18jav.tv/videos/jufe-130",
+  "https://18jav.tv/videos/dasd-572",
+  "https://18jav.tv/videos/meyd-532",
+  "https://18jav.tv/videos/mide-733",
+  "https://18jav.tv/videos/sdmf-009",
+  "https://18jav.tv/videos/cjod-224",
+  "https://18jav.tv/videos/vec-383",
+  "https://18jav.tv/videos/ebod-725",
+  "https://18jav.tv/videos/ngod-101",
 ];
 
 function makeId(url) {
+  if (url.startsWith("https://18jav.tv/")) return "18jav:" + Buffer.from(url).toString("base64url");
   return "avmirror:" + Buffer.from(url).toString("base64url");
 }
 
@@ -91,8 +92,8 @@ async function main() {
 
   const all = [
     ...GURU_URLS.slice(0, GURU_COUNT).map(u => ["Jav.guru", u]),
-    ...JAVHD_URLS.slice(0, JAVHD_COUNT).map(u => ["JavHD", u]),
-    ...JAVRIDER_URLS.slice(0, JAVRIDER_COUNT).map(u => ["JavRider", u]),
+    ...JAVPOST_URLS.slice(0, JAVPOST_COUNT).map(u => ["JavPost", u]),
+    ...JAV18_URLS.slice(0, JAV18_COUNT).map(u => ["18Jav", u]),
   ];
 
   const results = [];

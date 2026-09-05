@@ -1,8 +1,0 @@
-catalog	stream_status	source_status	content_type	bytes	playlist
-avmirror	200	403	text/html; charset=utf-8	146	no
-avmirror-popular	200	403	text/html; charset=utf-8	146	no
-avmirror-actors	200	403	text/html; charset=utf-8	146	no
-av01	200	200	application/x-mpegurl	449	yes
-av01-popular	200	200	application/x-mpegurl	497	yes
-javrider	200	200	text/plain;charset=UTF-8	2881	yes
-javrider-popular	200	200	text/plain;charset=UTF-8	2881	yes

@@ -4,7 +4,7 @@ const path = require('node:path');
 
 const port = Number(process.env.E2E_PORT || 7111);
 const base = `http://127.0.0.1:${port}`;
-const sources = ['avmirror', 'av01', 'javrider'];
+const sources = ['avmirror', '18jav'];
 const limit = Number(process.env.E2E_WORKS || 5);
 const server = spawn(process.execPath, ['server.js'], { cwd: path.resolve(__dirname, '..'), env: { ...process.env, LOCAL_MODE: 'true', BIND_HOST: '127.0.0.1', LAN_HOST: '127.0.0.1', PORT: String(port), BROWSER_HEADLESS: 'true' }, stdio: ['ignore', 'pipe', 'pipe'] });
 let logs = '';

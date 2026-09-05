@@ -8,7 +8,7 @@ const {
   isUsefulPlayerUrl,
   collectCatalogFromHtml,
   collectFallbackStreams
-} = require("../scraper");
+} = require("../src/scrapers/avmirror");
 
 test("makeId and idToUrl round-trip an item URL", () => {
   const url = "https://jav.guru/1046008/example-title/";

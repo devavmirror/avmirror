@@ -1,12 +1,12 @@
 {
   "name": "AVMirror",
-  "version": "26.1",
+  "version": "26.2",
   "scrapers": [
     {
       "id": "avmirror-direct",
       "name": "AVMirror Direct",
-      "description": "Provider direto: resolve streams no dispositivo, sem Render ou proxy remoto.",
-      "version": "26.1",
+      "description": "AVMirror Direct — Jav • Quality • Content.",
+      "version": "26.2",
       "author": "devavmirror",
       "supportedTypes": ["movie"],
       "filename": "providers/avmirror.js",

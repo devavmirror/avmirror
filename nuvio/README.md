@@ -4,7 +4,7 @@ O AVMirror para Nuvio possui **duas camadas complementares**. O **addon** fornec
 
 ## 1. Addon com catálogo
 
-O addon usa o manifesto padrão compatível com Nuvio e Stremio. Ele expõe os recursos `catalog`, `meta` e `stream`, incluindo catálogos AVMirror, AV01 e JavRider.
+O addon usa o manifesto padrão compatível com Nuvio e Stremio. Ele expõe os recursos `catalog`, `meta` e `stream`, incluindo catálogos AVMirror.
 
 Para instalar o catálogo no Nuvio, adicione o endereço do manifesto do servidor escolhido:
 
@@ -28,9 +28,9 @@ O plugin é instalado em **Configurações → Plugins** usando o manifesto do r
 https://raw.githubusercontent.com/devavmirror/avmirror/main/nuvio/manifest.json
 ```
 
-Ele não cria um segundo catálogo. Sua função é ser uma fonte complementar para itens que já foram encontrados pelo catálogo do Nuvio ou pelo addon AVMirror. Ele exporta `getStreams(id, mediaType, season, episode)` e reconhece IDs `av01:`, `avmirror:` e `javrider:`.
+Ele não cria um segundo catálogo. Sua função é ser uma fonte complementar para itens que já foram encontrados pelo catálogo do Nuvio ou pelo addon AVMirror. Ele exporta `getStreams(id, mediaType, season, episode)` e reconhece IDs `avmirror:`.
 
-Para `av01:<id>`, o plugin consulta a API da fonte diretamente e devolve o manifesto HLS original. Para IDs codificados `avmirror:` e `javrider:`, ele tenta extrair URLs diretas `.m3u8` ou `.mp4` da página correspondente.
+Para IDs codificados `avmirror:`, ele tenta extrair URLs diretas `.m3u8` ou `.mp4` da página correspondente.
 
 ## Como as duas camadas trabalham juntas
 

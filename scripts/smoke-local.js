@@ -12,9 +12,8 @@ async function check(path, expected = 200) {
   await check("/health");
   const manifest = await check("/manifest.json");
   const parsed = JSON.parse(manifest);
-  if (parsed.id !== "com.avmirror.addon") throw new Error("manifesto inesperado");
-  await check("/catalog/movie/javrider.json");
-  await check("/catalog/movie/av01.json");
+  if (!parsed.id?.startsWith("com.avmirror.addon")) throw new Error("manifesto inesperado");
+  await check("/catalog/movie/18jav.json");
   console.log("smoke local: OK");
 })().catch(error => {
   console.error(error.message);
