@@ -1,0 +1,6 @@
+name = "avmirror-api"
+main = "api-worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ORIGIN_URL = "https://avmirror-3843.onbelmo.uk"

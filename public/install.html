@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="AVMirror — Jav • Quality • Content.">
+  <title>AVMirror — Instalação</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{avpink:'#ff5398'}}}}</script>
+  <style>:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}body{background:#0a0a0a;color:#f5f5f5}.grid-bg{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:32px 32px}.glow{box-shadow:0 0 80px rgba(255,83,152,.12)}.wrap{word-break:break-all}.copy-btn{transition:all .2s}.copy-btn:hover{background:#ff5398;color:#000}</style>
+</head>
+<body class="min-h-screen grid-bg">
+  <header class="border-b border-white/10 bg-black/70"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-5"><a href="/install" class="flex items-center gap-3 font-bold"><img src="/logo.png?v=26.1.0" alt="Logo AVMirror" class="h-9 w-9 rounded object-cover" width="36" height="36"><span>AVMirror</span></a></div></header>
+  <main class="mx-auto max-w-4xl px-5 pb-16">
+
+    <section class="py-20 text-center sm:py-28">
+      <p class="mb-5 text-xs font-bold uppercase tracking-[.28em] text-avpink">Jav • Quality • Content</p>
+      <h1 class="text-5xl font-extrabold tracking-tight text-white sm:text-7xl">AVMirror</h1>
+      <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-400">Servidores de qualidade para Stremio e Nuvio.</p>
+      <div class="mt-10 flex flex-wrap justify-center gap-4">
+        <a id="install" href="#" class="rounded bg-avpink px-8 py-3.5 font-bold text-black transition hover:bg-white">Instalar no Stremio</a>
+        <a href="#nuvio" class="rounded border border-white/20 px-8 py-3.5 font-bold transition hover:border-avpink hover:text-avpink">Configurar Nuvio</a>
+      </div>
+      <div id="mode-box" class="mx-auto mt-10 max-w-md rounded border border-white/10 bg-black/50 p-4 text-left text-sm">
+        <div class="flex items-center justify-between">
+          <strong class="text-xs">Status</strong>
+          <span id="mode-badge" class="rounded bg-white/10 px-2 py-1 text-xs text-gray-300">Verificando...</span>
+        </div>
+        <p id="mode-detail" class="mt-2 text-xs leading-5 text-gray-400"></p>
+      </div>
+    </section>
+
+    <section id="stremio" class="rounded border border-avpink/30 bg-black/60 p-6 glow sm:p-8">
+      <h2 class="text-xl font-bold">Stremio</h2>
+      <p class="mt-3 text-sm leading-6 text-gray-400">Copie o manifesto abaixo e adicione no Stremio.</p>
+      <div class="mt-5 rounded border border-white/10 bg-[#111] p-4">
+        <code id="manifest-url" class="wrap block text-xs text-gray-300"></code>
+        <button id="copy" type="button" class="copy-btn mt-3 rounded bg-white/10 px-3 py-2 text-xs font-bold">Copiar manifesto</button>
+      </div>
+    </section>
+
+    <section id="nuvio" class="mt-6 rounded border border-white/10 bg-black/60 p-6 glow sm:p-8">
+      <h2 class="text-xl font-bold">Nuvio</h2>
+      <p class="mt-3 text-sm leading-6 text-gray-400">Adicione o manifesto abaixo no Nuvio.</p>
+      <div class="mt-5 rounded border border-white/10 bg-[#111] p-4">
+        <code id="nuvio-addon-url" class="wrap block text-xs text-gray-300"></code>
+        <button id="copy-nuvio-addon" type="button" class="copy-btn mt-3 rounded bg-white/10 px-3 py-2 text-xs font-bold">Copiar manifesto Nuvio</button>
+      </div>
+    </section>
+
+    <footer class="mt-16 border-t border-white/10 py-10 text-center text-xs leading-6 text-gray-500">
+      <p>AVMirror 26.1.0</p>
+      <p class="mt-2"><a id="manifest-link" href="#" class="text-gray-300 hover:text-avpink">Manifesto</a> · <a href="https://github.com/devavmirror/avmirror" class="text-gray-300 hover:text-avpink">GitHub</a></p>
+    </footer>
+
+  </main>
+  <script>
+    const manifestNode=document.getElementById('manifest-url'),nuvioAddonNode=document.getElementById('nuvio-addon-url'),installButton=document.getElementById('install'),copyButton=document.getElementById('copy'),copiedNode=document.createElement('p');copiedNode.className='mt-3 min-h-5 text-xs text-avpink';copiedNode.setAttribute('aria-live','polite');copyButton.parentElement.after(copiedNode);let manifest='';
+    function applyServer(baseUrl){const clean=baseUrl.replace(/\/$/,'');manifest=clean+'/manifest.json';manifestNode.textContent=manifest;nuvioAddonNode.textContent=manifest;document.getElementById('manifest-link').href=manifest;installButton.href='stremio://'+new URL(clean).host+'/manifest.json'}
+    applyServer(location.origin);fetch('/api/local-info',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(info=>{const badge=document.getElementById('mode-badge'),detail=document.getElementById('mode-detail'),box=document.getElementById('mode-box');if(info&&info.baseUrl){applyServer(info.baseUrl);box.classList.remove('hidden');if(info.localMode){badge.textContent='Online';badge.className='rounded bg-avpink/20 px-2 py-1 text-xs text-avpink';detail.textContent='Conectado ao servidor local.'}else{badge.textContent='Online';badge.className='rounded bg-white/10 px-2 py-1 text-xs text-gray-300';detail.textContent='Modo online ativo.'}}else{box.classList.add('hidden')}}).catch(()=>{document.getElementById('mode-box').classList.add('hidden')});
+    async function copy(value,message){try{await navigator.clipboard.writeText(value);copiedNode.textContent=message}catch{copiedNode.textContent=value}}
+    copyButton.addEventListener('click',()=>copy(manifest,'Manifesto copiado.'));document.getElementById('copy-nuvio-addon').addEventListener('click',()=>copy(manifest,'Manifesto Nuvio copiado.'));
+    installButton.addEventListener('click',async e=>{e.preventDefault();const target=installButton.href;installButton.textContent='Abrindo Stremio...';try{await fetch('/health',{cache:'no-store'})}catch{}finally{window.location.assign(target)}});
+  </script>
+</body>
+</html>

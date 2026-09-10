@@ -1,0 +1,34 @@
+{
+  "name": "avmirror-stremio-addon",
+  "version": "26.1.0",
+  "private": true,
+  "description": "AVMirror 26.1.0 para Stremio e Nuvio com servidor local Linux.",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "start:local": "LOCAL_MODE=true BIND_HOST=0.0.0.0 node scripts/start-local.js",
+    "dev": "node --watch src/server.js",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "node --test test/avsubtitles.test.js test/catalog-cache.test.js test/direct-sources.test.js test/p2p.test.js test/peer-probe.test.js test/scraper-streams.test.js test/scraper.test.js test/stream-selection.test.js test/subtitlecat.test.js test/torrent-metadata.test.js test/zeromagnet.test.js",
+    "test:integration": "node --test test/integration.test.js",
+    "test:external": "node --test test/e2e.test.js test/e2e-user-flow.test.js test/ffjav-sources.test.js test/projectjav-sources.test.js test/torrent-sources.test.js",
+    "cache:update": "node scripts/update-cache.js",
+    "test:sources": "node scripts/diagnose-sources.js",
+    "test:e2e": "node scripts/test-e2e-40.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bittorrent-tracker": "^11.2.3",
+    "cheerio": "^1.1.2",
+    "express": "^5.1.0",
+    "fflate": "^0.8.3",
+    "stremio-addon-sdk": "^1.6.10",
+    "webtorrent": "^3.0.21"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.1"
+  }
+}
