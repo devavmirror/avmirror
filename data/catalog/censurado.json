@@ -2,7 +2,7 @@
   "schema": 1,
   "source": "avmirror",
   "mode": "avmirror-censored",
-  "generatedAt": "2026-10-04T00:39:27.207Z",
+  "generatedAt": "2026-10-04T06:50:29.201Z",
   "pages": [
     {
       "page": 1,
@@ -277,12 +277,6 @@
           "poster": "https://cdn.javmiku.com/wp-content/uploads/2026/10/n_945kidm594bpl-550x374.jpg"
         },
         {
-          "id": "avmirror:aHR0cHM6Ly9qYXYuZ3VydS8xMDU4MDI1L2tpZG0tNjAwYi11bnRpdGxlZC1hc3VrYS1vZGEtYmx1LXJheS1kaXNjLw",
-          "type": "movie",
-          "name": "[KIDM-600B] Untitled Asuka Oda (Blu-ray disc)",
-          "poster": "https://cdn.javmiku.com/wp-content/uploads/2026/10/n_945kidm600bpl-550x374.jpg"
-        },
-        {
           "id": "avmirror:aHR0cHM6Ly9qYXYuZ3VydS8xMDU4MDIzL2tpZG0tNjA5Yi11bnRpdGxlZC1yeW8tbXVyYXNha2ktYmx1LXJheS1kaXNjLTIv",
           "type": "movie",
           "name": "[KIDM-609B] Untitled Ryo Murasaki (Blu-ray disc)",
@@ -293,6 +287,12 @@
           "type": "movie",
           "name": "[KIDM-607B] Title undecided Ayane Sakurai (Blu-ray disc)",
           "poster": "https://cdn.javmiku.com/wp-content/uploads/2026/10/n_945kidm607bpl-550x374.jpg"
+        },
+        {
+          "id": "avmirror:aHR0cHM6Ly9qYXYuZ3VydS8xMDU4MDI1L2tpZG0tNjAwYi11bnRpdGxlZC1hc3VrYS1vZGEtYmx1LXJheS1kaXNjLw",
+          "type": "movie",
+          "name": "[KIDM-600B] Untitled Asuka Oda (Blu-ray disc)",
+          "poster": "https://cdn.javmiku.com/wp-content/uploads/2026/10/n_945kidm600bpl-550x374.jpg"
         },
         {
           "id": "avmirror:aHR0cHM6Ly9qYXYuZ3VydS8xMDU4MDI2L2tpZG0tNTk5Yi11bnRpdGxlZC15YW1hbW90by1yaWtvLWJsdS1yYXktZGlzYy0yLw",
